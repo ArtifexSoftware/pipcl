@@ -1,4 +1,4 @@
 [build-system]
     requires = []
     build-backend = "setup"
-    backend-path = ["."]
+    backend-path = [".", "src"]
