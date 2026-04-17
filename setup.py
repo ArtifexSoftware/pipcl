@@ -1,10 +1,12 @@
+import sys
+
 import pipcl
 
 
 def build():
     return [
-            ('pipcl.py', 'pipcl/__init__.py'),
-            ('wdev.py', 'pipcl/wdev.py'),
+            ('src/pipcl.py', 'pipcl/__init__.py'),
+            ('src/wdev.py', 'pipcl/wdev.py'),
             ]
 
 
@@ -34,5 +36,4 @@ build_sdist = p.build_sdist
 
 
 if __name__ == '__main__':
-    import sys
     p.handle_argv(sys.argv)
