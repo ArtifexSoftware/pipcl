@@ -82,6 +82,7 @@ def test_codespell():
     '''
     Check rebased Python code with codespell.
     '''
+    subprocess.run(f'pip install -U codespell', shell=1, check=1)
     root = os.path.abspath(f'{__file__}/../..')
     
     # For now we ignore files that we would ideally still look at, because it
@@ -115,6 +116,7 @@ def test_codespell():
 
 
 def test_flake8():
+    subprocess.run(f'pip install -U flake8', shell=1, check=1)
     ignores = textwrap.dedent('''
             E123 closing bracket does not match indentation of opening bracket\'s line
             E124 closing bracket does not match visual indentation
@@ -159,7 +161,7 @@ def test_flake8():
     
     command = f'flake8 --ignore={ignores} --statistics'
     
-    paths = ['pipcl.py', 'wdev.py']
+    paths = ['src/pipcl.py', 'src/wdev.py']
     for p in paths:
         if p.endswith('.py'):
             command += f' {root}/{p}'
