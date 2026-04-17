@@ -4550,6 +4550,16 @@ def python_version_tuple():
     return tuple(ret)
 
 
+def venv_enter_cmd(venv_name):
+    '''
+    Returns command that will enter venv, different on Windows vs Unix.
+    '''
+    if windows():
+        return f'{venv_name}/Scripts/activate'.replace('/', '\\')
+    else:
+        return f'. {venv_name}/bin/activate'
+
+
 if __name__ == '__main__':
     # Internal-only limited command line support, used if
     # graal_legacy_python_config is true.
