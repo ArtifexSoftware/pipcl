@@ -37,7 +37,7 @@ To build a pure-python package:
     def build():
         # Creates a module called `mymodule`.
         return [
-                (src/foo.py, mymodule/__init__.py),
+                ('src/foo.py', 'mymodule/__init__.py'),
                 ]
     def sdist():
         return pipcl.git_items('.')
@@ -57,9 +57,9 @@ To build a pure-python package:
 * Create a ``pyproject.toml`` that tells pip (and other build frontends) to use setup.py::
 
     [build-system]
-    requires = ['pipcl']
-    build-backend = 'setup' # Use setup.py
-    backend-path = ['.']    # in top-level of the checkout.
+        requires = ['pipcl']
+        build-backend = 'setup' # Use setup.py
+        backend-path = ['.']    # in top-level of the checkout.
 
 To build a package containing a SWIG extension module, the ``build()`` function
 can be modified to use ``pipcl.build_extension()``::
@@ -184,3 +184,23 @@ Other
 * Support for Pyodide.
 * Experimental support for Graal.
 
+
+Changelog
+---------
+
+Version 2:
+
+* Fixed bug in zip file generation on python<3.13.
+* Moved Python code into ``src/``.
+* Don't attempt to be usable in raw checkout.
+* Fixed doctest's to work on Windows.
+* Added python_version_tuple().
+* Avoid spurious differences between wheels built on different systems:
+
+  * Sort lines in generated RECORD file.
+  * Use ``--global core.autocrlf input`` when running ``git clone``.
+
+
+Version 1 (2026-04-16):
+
+* First release to pypi.org
