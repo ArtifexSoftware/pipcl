@@ -16,7 +16,7 @@ def sdist():
 
 p = pipcl.Package(
         'pipcl',
-        version = str(1),
+        version = '2',
         pure = True,
         description='README.rst',
         summary='Python packaging operations, including PEP-517 support, for use by a setup.py script.',
