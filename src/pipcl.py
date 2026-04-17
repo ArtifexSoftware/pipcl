@@ -278,14 +278,15 @@ class Package:
 
     Check that touching foo.i.cpp does not run swig, but does recompile/link.
 
+        >>> so_suffix = 'pyd' if windows() else 'so'
         >>> t0 = time.time()
         >>> os.utime('pipcl_test/build/foo.i.cpp')
         >>> _ = subprocess.run(
         ...         f'cd pipcl_test && {sys.executable} setup.py bdist_wheel',
         ...         shell=1, check=1)
         >>> assert os.path.getmtime('pipcl_test/build/foo.py') <= t0
-        >>> so = glob.glob('pipcl_test/build/*.so')
-        >>> assert len(so) == 1
+        >>> so = glob.glob(f'pipcl_test/build/*.{so_suffix}')
+        >>> assert len(so) == 1, f'{so_suffix=} {so=} {os.path.abspath(".")=}'
         >>> so = so[0]
         >>> assert os.path.getmtime(so) > t0
 
@@ -297,7 +298,7 @@ class Package:
         ...         f'cd pipcl_test && {sys.executable} setup.py bdist_wheel',
         ...         shell=1, check=1)
         >>> assert os.path.getmtime('pipcl_test/build/foo.py') <= t0
-        >>> so = glob.glob('pipcl_test/build/*.so')
+        >>> so = glob.glob(f'pipcl_test/build/*.{so_suffix}')
         >>> assert len(so) == 1
         >>> so = so[0]
         >>> assert os.path.getmtime(so) > t0
@@ -312,13 +313,13 @@ class Package:
         ...         shell=1, check=1)
 
         >>> print('Installing from wheel into venv using pip.', file=sys.stderr)
-        >>> _ = subprocess.run(
-        ...         f'. pipcl_test/pylocal/bin/activate && pip install pipcl_test/dist/*.whl',
+        >>> whl = glob.glob(f'pipcl_test/dist/*.whl')[0]
+        >>> _ = subprocess.run(f'{venv_enter_cmd("pipcl_test/pylocal")} && pip install {whl}',
         ...         shell=1, check=1)
 
         >>> print('Running foo_cli.', file=sys.stderr)
         >>> _ = subprocess.run(
-        ...         f'. pipcl_test/pylocal/bin/activate && foo_cli',
+        ...         f'{venv_enter_cmd("pipcl_test/pylocal")} && foo_cli',
         ...         shell=1, check=1)
     
     Check that wheel contents' unix permissions are readable by all.
@@ -769,7 +770,7 @@ class Package:
             
             newfiles = NewFiles(f'{wheel_directory}/*.whl')
             run(
-                    f'. {venv_name}/bin/activate && python setup.py --dist-dir {shlex.quote(wheel_directory)} bdist_wheel',
+                    f'. {venv_enter_cmd(venv_name)} && python setup.py --dist-dir {shlex.quote(wheel_directory)} bdist_wheel',
                     env_extra = env_extra,
                     prefix = f'pipcl.py graal {python_native}: ',
                     )
@@ -3516,29 +3517,29 @@ def run_if( command, out, *prerequisites, caller=1):
 
         >>> del _log_f[:]
         >>> _log_f.append(sys.stdout)
-        >>> log_prefix('%p:%f(): ')
+        >>> log_prefix('%f(): ')
         >>> out = 'tests/run_if_test_out'
         >>> fs_remove(out)
         >>> fs_remove( f'{out}.cmd')
         >>> run_if( f'touch {out}', out, caller=0)
-        pipcl.py:run_if(): Running command because: File does not exist: 'tests/run_if_test_out'
-        pipcl.py:run_if(): Running: touch tests/run_if_test_out
+        run_if(): Running command because: File does not exist: 'tests/run_if_test_out'
+        run_if(): Running: touch tests/run_if_test_out
         True
 
     If we repeat, the output file will be up to date so the command is not run:
 
         >>> run_if( f'touch {out}', out, caller=0)
-        pipcl.py:run_if(): Not running command because up to date: 'tests/run_if_test_out'
+        run_if(): Not running command because up to date: 'tests/run_if_test_out'
 
     If we change the command, the command is run:
 
         >>> run_if( f'touch {out};', out, caller=0)
-        pipcl.py:run_if(): Running command because: Command has changed:
-        pipcl.py:run_if():     @@ -1,2 +1,2 @@
-        pipcl.py:run_if():      touch
-        pipcl.py:run_if():     -tests/run_if_test_out
-        pipcl.py:run_if():     +tests/run_if_test_out;
-        pipcl.py:run_if(): Running: touch tests/run_if_test_out;
+        run_if(): Running command because: Command has changed:
+        run_if():     @@ -1,2 +1,2 @@
+        run_if():      touch
+        run_if():     -tests/run_if_test_out
+        run_if():     +tests/run_if_test_out;
+        run_if(): Running: touch tests/run_if_test_out;
         True
 
     If we add a prerequisite that is newer than the output, the command is run:
@@ -3546,55 +3547,24 @@ def run_if( command, out, *prerequisites, caller=1):
         >>> time.sleep(1)
         >>> prerequisite = 'tests/run_if_test_prerequisite'
         >>> run( f'touch {prerequisite}', caller=0)
-        pipcl.py:run(): Running: touch tests/run_if_test_prerequisite
+        run(): Running: touch tests/run_if_test_prerequisite
         >>> run_if( f'touch  {out}', out, prerequisite, caller=0)
-        pipcl.py:run_if(): Running command because: Command has changed:
-        pipcl.py:run_if():     @@ -1,2 +1,2 @@
-        pipcl.py:run_if():      touch
-        pipcl.py:run_if():     -tests/run_if_test_out;
-        pipcl.py:run_if():     +tests/run_if_test_out
-        pipcl.py:run_if(): Running: touch  tests/run_if_test_out
+        run_if(): Running command because: Command has changed:
+        run_if():     @@ -1,2 +1,2 @@
+        run_if():      touch
+        run_if():     -tests/run_if_test_out;
+        run_if():     +tests/run_if_test_out
+        run_if(): Running: touch  tests/run_if_test_out
         True
 
     If we repeat, the output will be newer than the prerequisite, so the
     command is not run:
 
         >>> run_if( f'touch  {out}', out, prerequisite, caller=0)
-        pipcl.py:run_if(): Not running command because up to date: 'tests/run_if_test_out'
+        run_if(): Not running command because up to date: 'tests/run_if_test_out'
     
-    We detect changes to the contents of argv[0]:
-    
-    Create a shell script and run it:
-    
-    >>> for path in glob.glob('tests/run_if_test_argv0.*'):
-    ...     fs_remove(path)
-    >>> with open('tests/run_if_test_argv0.sh', 'w') as f:
-    ...     print('#! /bin/sh', file=f)
-    ...     print('echo hello world > tests/run_if_test_argv0.out', file=f)
-    >>> import stat
-    >>> os.chmod('tests/run_if_test_argv0.sh', os.stat('tests/run_if_test_argv0.sh').st_mode | stat.S_IEXEC)
-    
-    >>> run_if( f'./tests/run_if_test_argv0.sh', f'tests/run_if_test_argv0.out', caller=0)
-    pipcl.py:run_if(): Running command because: File does not exist: 'tests/run_if_test_argv0.out'
-    pipcl.py:run_if(): Running: ./tests/run_if_test_argv0.sh
-    True
-    
-    Running it a second time does nothing:
-    
-    >>> run_if( f'./tests/run_if_test_argv0.sh', f'tests/run_if_test_argv0.out', caller=0)
-    pipcl.py:run_if(): Not running command because up to date: 'tests/run_if_test_argv0.out'
-    
-    Modify the script.
-    
-    >>> with open('tests/run_if_test_argv0.sh', 'a') as f:
-    ...     print('\\necho hello >> tests/run_if_test_argv0.out', file=f)
-    
-    And now it is run because the hash of argv[0] has changed:
-    
-    >>> run_if( f'./tests/run_if_test_argv0.sh', f'tests/run_if_test_argv0.out', caller=0)
-    pipcl.py:run_if(): Running command because: arg0 hash has changed.
-    pipcl.py:run_if(): Running: ./tests/run_if_test_argv0.sh
-    True
+    Also see OS-specific doctest examples for
+    `_run_if_test_scripting_windows()` and `_run_if_test_scripting_unix()`.
     '''
     doit = False
     
@@ -3704,6 +3674,97 @@ def run_if( command, out, *prerequisites, caller=1):
         return True
     else:
         log1( f'Not running command because up to date: {out!r}', caller=caller+1)
+
+
+if windows():
+    def _run_if_test_scripting_windows():
+        '''
+        Dummy function to allow Windows-only doctests for pipcl.run_if().
+        
+        We detect changes to the contents of argv[0]:
+
+        Create a shell script and run it:
+
+        >>> del _log_f[:]
+        >>> _log_f.append(sys.stdout)
+        >>> log_prefix('%f(): ')
+        
+        >>> for path in glob.glob('tests/run_if_test_argv0.*'):
+        ...     fs_remove(path)
+        >>> with open('tests/run_if_test_argv0.bat', 'w') as f:
+        ...     print('@echo off', file=f)
+        ...     print('echo hello world > tests/run_if_test_argv0.out', file=f)
+        >>> import stat
+        >>> os.chmod('tests/run_if_test_argv0.bat', os.stat('tests/run_if_test_argv0.bat').st_mode | stat.S_IEXEC)
+
+        >>> run_if('"tests/run_if_test_argv0.bat"', f'tests/run_if_test_argv0.out', caller=0)
+        run_if(): Running command because: File does not exist: 'tests/run_if_test_argv0.out'
+        run_if(): Running: "tests/run_if_test_argv0.bat"
+        True
+
+        Running it a second time does nothing:
+
+        >>> run_if(f'"tests/run_if_test_argv0.bat"', f'tests/run_if_test_argv0.out', caller=0)
+        run_if(): Not running command because up to date: 'tests/run_if_test_argv0.out'
+
+        Modify the script.
+
+        >>> with open('tests/run_if_test_argv0.bat', 'a') as f:
+        ...     print('echo hello >> tests/run_if_test_argv0.out', file=f)
+
+        And now it is run because the hash of argv[0] has changed:
+
+        >>> run_if(f'"tests/run_if_test_argv0.bat"', f'tests/run_if_test_argv0.out', caller=0)
+        run_if(): Running command because: arg0 hash has changed.
+        run_if(): Running: "tests/run_if_test_argv0.bat"
+        True
+        '''
+        pass
+else:
+    def _run_if_test_scripting_unix():
+        '''
+        Dummy function to allow non-Windows doctests for pipcl.run_if().
+        
+        We detect changes to the contents of argv[0]:
+
+        Create a shell script and run it:
+
+        >>> del _log_f[:]
+        >>> _log_f.append(sys.stdout)
+        >>> log_prefix('%f(): ')
+        
+        >>> for path in glob.glob('tests/run_if_test_argv0.*'):
+        ...     fs_remove(path)
+        >>> with open('tests/run_if_test_argv0.sh', 'w') as f:
+        ...     print('#! /bin/sh', file=f)
+        ...     print('echo hello world > tests/run_if_test_argv0.out', file=f)
+        >>> import stat
+        >>> os.chmod('tests/run_if_test_argv0.sh', os.stat('tests/run_if_test_argv0.sh').st_mode | stat.S_IEXEC)
+
+        
+        >>> run_if('tests/run_if_test_argv0.sh', f'tests/run_if_test_argv0.out', caller=0)
+        run_if(): Running command because: File does not exist: 'tests/run_if_test_argv0.out'
+        run_if(): Running: tests/run_if_test_argv0.sh
+        True
+
+        Running it a second time does nothing:
+
+        >>> run_if( f'tests/run_if_test_argv0.sh', f'tests/run_if_test_argv0.out', caller=0)
+        run_if(): Not running command because up to date: 'tests/run_if_test_argv0.out'
+
+        Modify the script.
+
+        >>> with open('tests/run_if_test_argv0.sh', 'a') as f:
+        ...     print('echo hello >> tests/run_if_test_argv0.out', file=f)
+
+        And now it is run because the hash of argv[0] has changed:
+
+        >>> run_if( f'tests/run_if_test_argv0.sh', f'tests/run_if_test_argv0.out', caller=0)
+        run_if(): Running command because: arg0 hash has changed.
+        run_if(): Running: tests/run_if_test_argv0.sh
+        True
+        '''
+        pass
 
 
 def fs_find_in_paths( name, paths=None, verbose=False):
@@ -4574,6 +4635,8 @@ if __name__ == '__main__':
             for ff in sys.argv[2:]:
                 fff = globals()[ff]
                 doctest.run_docstring_examples(fff, globals())
+                # Unfortunately doctest.run_docstring_examples() always seems
+                # to return None even if test(s) failed.
         else:
             doctest.testmod(None)
     elif sys.argv[1:] == ['--graal-legacy-python-config', '--includes']:
