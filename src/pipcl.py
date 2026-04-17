@@ -360,38 +360,41 @@ class Package:
             name,
             version,
             *,
-            pure=False,
-            platform = None,    # pylint: disable=redefined-outer-name
-            supported_platform = None,
-            summary = None,
-            description = None,
-            description_content_type = None,
-            keywords = None,
-            home_page = None,
-            download_url = None,
             author = None,
             author_email = None,
+            classifier = None,
+            description = None,
+            description_content_type = None,
+            download_url = None,
+            home_page = None,
+            keywords = None,
+            license = None, # pylint: disable=redefined-builtin
             maintainer = None,
             maintainer_email = None,
-            license = None, # pylint: disable=redefined-builtin
-            classifier = None,
-            requires_dist = None,
-            requires_python = None,
-            requires_external = None,
+            platform = None,    # pylint: disable=redefined-outer-name
             project_url = None,
             provides_extra = None,
-
+            requires_dist = None,
+            requires_external = None,
+            requires_python = None,
+            summary = None,
+            supported_platform = None,
+            
             entry_points = None,
-
-            root = None,
+            
             fn_build = None,
             fn_clean = None,
             fn_sdist = None,
+            
+            pure=False,
+            py_limited_api = None,
+            
             tag_python = None,
             tag_abi = None,
             tag_platform = None,
-            py_limited_api = None,
-
+            
+            root = None,
+            
             wheel_compression = zipfile.ZIP_DEFLATED,
             wheel_compresslevel = None,
             ):
@@ -405,86 +408,102 @@ class Package:
             name:
                 Used for metadata `Name`.
                 A string, the name of the Python package.
+            
             version:
                 Used for metadata `Version`.
                 A string, the version of the Python package. Also see PEP-440
                 `Version Identification and Dependency Specification`.
-            pure:
-                If true we mark wheels as pure python - for example default
-                wheel tag will be `py3-none-any`.
-            platform:
-                Used for metadata `Platform`.
-                A string or list of strings.
-            supported_platform:
-                Used for metadata `Supported-Platform`.
-                A string or list of strings.
-            summary:
-                Used for metadata `Summary`.
-                A string, short description of the package.
-            description:
-                Used for metadata `Description`.
-                A string. If contains newlines, a detailed description of the
-                package. Otherwise the path of a file containing the detailed
-                description of the package.
-            description_content_type:
-                Used for metadata `Description-Content-Type`.
-                A string describing markup of `description` arg. For example
-                `text/markdown; variant=GFM`.
-                If not specified we try to infer a value from <description>
-                file suffix.
-            keywords:
-                Used for metadata `Keywords`.
-                A string containing comma-separated keywords.
-            home_page:
-                Used for metadata `Home-page`.
-                URL of home page.
-                Deprecated since metadata-1.2 - use project_url.
-            download_url:
-                Used for metadata `Download-URL`.
-                Where this version can be downloaded from.
-                Deprecated since metadata-1.2 - use project_url.
+            
             author:
                 Used for metadata `Author`.
-                Author.
+                Author name.
+            
             author_email:
                 Used for metadata `Author-email`.
                 Author email.
-            maintainer:
-                Used for metadata `Maintainer`.
-                Maintainer.
-            maintainer_email:
-                Used for metadata `Maintainer-email`.
-                Maintainer email.
-            license:
-                Used for metadata `License`.
-                A string containing the license text. Written into metadata
-                file `COPYING`. Is also written into metadata itself if not
-                multi-line.
+            
             classifier:
                 Used for metadata `Classifier`.
                 A string or list of strings. Also see:
 
                 * https://pypi.org/pypi?%3Aaction=list_classifiers
                 * https://pypi.org/classifiers/
-
-            requires_dist:
-                Used for metadata `Requires-Dist`.
-                A string or list of strings, Python packages required
-                at runtime. None items are ignored.
-            requires_python:
-                Used for metadata `Requires-Python`.
+            
+            description:
+                Used for metadata `Description`.
+                A string. If contains newlines, a detailed description of the
+                package. Otherwise the path of a file containing the detailed
+                description of the package.
+            
+            description_content_type:
+                Used for metadata `Description-Content-Type`.
+                A string describing markup of `description` arg. For example
+                `text/markdown; variant=GFM`.
+                If not specified we try to infer a value from <description>
+                file suffix.
+            
+            download_url:
+                Used for metadata `Download-URL`.
+                Where this version can be downloaded from.
+                Deprecated since metadata-1.2 - use project_url.
+            
+            home_page:
+                Used for metadata `Home-page`.
+                URL of home page.
+                Deprecated since metadata-1.2 - use project_url.
+            
+            keywords:
+                Used for metadata `Keywords`.
+                A string containing comma-separated keywords.
+            
+            license:
+                Used for metadata `License`.
+                A string containing the license text. Written into metadata
+                file `COPYING`. Is also written into metadata itself if not
+                multi-line.
+            
+            maintainer:
+                Used for metadata `Maintainer`.
+                Maintainer.
+            
+            maintainer_email:
+                Used for metadata `Maintainer-email`.
+                Maintainer email.
+            
+            platform:
+                Used for metadata `Platform`.
                 A string or list of strings.
-            requires_external:
-                Used for metadata `Requires-External`.
-                A string or list of strings.
+            
             project_url:
                 Used for metadata `Project-URL`.
                 A string or list of strings, each of the form: `{name}, {url}`.
                 Well-known names include: homepage, source, documentation,
                 issues; for more details, see:
                 https://packaging.python.org/en/latest/specifications/well-known-project-urls/#well-known-project-urls
+            
             provides_extra:
                 Used for metadata `Provides-Extra`.
+                A string or list of strings.
+            
+            requires_dist:
+                Used for metadata `Requires-Dist`.
+                A string or list of strings, Python packages required
+                at runtime. None items are ignored.
+            
+            requires_external:
+                Used for metadata `Requires-External`.
+                A string or list of strings.
+            
+            requires_python:
+                Used for metadata `Requires-Python`.
+                A string or list of strings.
+            
+            summary:
+                Used for metadata `Summary`.
+                A string, short description of the package.
+            
+            supported_platform:
+                Used for metadata `Supported-Platform`.
                 A string or list of strings.
 
             entry_points:
@@ -506,9 +525,6 @@ class Package:
                             'foo_cli = foo.__main__:main',
                         ],
                     }
-
-            root:
-                Root of package, defaults to current directory.
 
             fn_build:
                 A function taking no args, or a single `config_settings` dict
@@ -575,6 +591,16 @@ class Package:
                 The specification for sdists requires that the list contains
                 `pyproject.toml`; we enforce this with a Python assert.
 
+            pure:
+                If true we mark wheels as pure python - for example default
+                wheel tag will be `py3-none-any`.
+
+            py_limited_api:
+                If true we build extension modules that use the Python
+                Limited API. We use the version of `sys.executable` to define
+                `Py_LIMITED_API` when compiling extensions, and use ABI tag
+                `abi3` in the wheel name if argument `tag_abi` is None.
+            
             tag_python:
                 First element of wheel tag defined in PEP-425. If None we use
                 `cp{version}`.
@@ -591,18 +617,11 @@ class Package:
                 `distutils.util.get_platform()` as specified in the PEP), e.g.
                 `openbsd_7_0_amd64`.
 
-            py_limited_api:
-                If true we build extension modules that use the Python
-                Limited API. We use the version of `sys.executable` to define
-                `Py_LIMITED_API` when compiling extensions, and use ABI tag
-                `abi3` in the wheel name if argument `tag_abi` is None.
-
+            root:
+                Root of package, defaults to current directory.
+            
             wheel_compression:
                 Used as `zipfile.ZipFile()`'s `compression` parameter when
-                creating wheels.
-
-            wheel_compresslevel:
-                Used as `zipfile.ZipFile()`'s `compresslevel` parameter when
                 creating wheels.
 
         Occurrences of `None` in lists are ignored.
