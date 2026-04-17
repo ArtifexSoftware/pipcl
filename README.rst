@@ -184,3 +184,19 @@ Other
 * Support for Pyodide.
 * Experimental support for Graal.
 
+
+Changelog
+---------
+
+Version 2:
+
+* Fixed bug in zip file generation on python<3.13.
+* Moved Python code into ``src/``.
+* Don't attempt to be usable in raw checkout.
+* Fixed doctest's to work on Windows.
+* Added python_version_tuple().
+
+
+Version 1 (2026-04-16):
+
+* First release to pypi.org
