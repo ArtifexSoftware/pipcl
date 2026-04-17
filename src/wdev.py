@@ -11,10 +11,7 @@ import sys
 import sysconfig
 import textwrap
 
-try:
-    from . import pipcl    # pylint: disable=cyclic-import
-except Exception:
-    import pipcl
+import pipcl
 
 
 class WindowsVS:
