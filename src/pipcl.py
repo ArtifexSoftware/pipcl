@@ -56,11 +56,10 @@ import textwrap
 import time
 import zipfile
 
-
 try:
-    from . import wdev    # pylint: disable=cyclic-import
-except Exception:
     import wdev
+except ImportError:
+    from . import wdev
 
 
 class Package:
