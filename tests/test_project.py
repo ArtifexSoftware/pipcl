@@ -4,7 +4,6 @@ import textwrap
 
 g_root = os.path.normpath(f'{__file__}/../..')
 
-sys.path.insert(0, g_root)
 import pipcl
 
 pipcl.log(f'{sys.path=}')
