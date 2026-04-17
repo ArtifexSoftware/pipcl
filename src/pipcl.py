@@ -4154,12 +4154,17 @@ def zipfile_writestr(zf, name, contents, unix_permissions=0o600):
     Alternative to `zipfile.ZipFile.writestr()`, which allows control over
     permissions. Our default 0o600 matches `zipfile.ZipFile.writestr()`.
     '''
+    # There isn't a good way of setting permissions, zipfile seems very badly
+    # designed here.
     zipinfo = zipfile.ZipInfo(
             filename = name,
             date_time = time.localtime(time.time())[:6],
             )
     zipinfo.compress_type = zf.compression
-    zipinfo.compress_level = zf.compresslevel
+    if python_version_tuple() >= (3, 13):
+        zipinfo.compress_level = zf.compresslevel
+    else:
+        zipinfo._compresslevel = zf.compresslevel
     zipinfo.external_attr = unix_permissions << 16
     zf.writestr(zipinfo, contents)
 
@@ -4529,6 +4534,20 @@ def _commands_similar(a, b):
     log(f'b:')
     log(f'{textwrap.indent(b, "    ")}')
     return a == b
+
+
+def python_version_tuple():
+    '''
+    Like platform.python_version_tuple() except converts items to integers if
+    possible.
+    '''
+    ret = list(platform.python_version_tuple())
+    for i, value in enumerate(ret):
+        try:
+            ret[i] = int(value)
+        except Exception:
+            pass
+    return tuple(ret)
 
 
 if __name__ == '__main__':
