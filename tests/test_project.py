@@ -161,3 +161,76 @@ def test_project():
     pipcl.log('## Check we can import pipcl_test_module.')
     pipcl.log(f'{sys.path=}')
     import pipcl_test_module
+
+
+def test_wheel_cr():
+    path_test = f'{g_root}/temp_test_wheel_cr'
+    pipcl.fs_ensure_empty_dir(path_test)
+    
+    pipcl.log('## Prepare a piprepo containing a pipcl wheel.')
+    pipcl.run(f'pip install --upgrade piprepo "setuptools<81"', prefix='pip install piprepo: ')
+    newfiles = pipcl.NewFiles(f'{path_test}/wheelhouse/*.whl')
+    pipcl.run(f'pip wheel -w {path_test}/wheelhouse {g_root}', prefix='pip wheel pipcl: ')
+    path_wheel = newfiles.get_one()
+    pipcl.run(f'piprepo build {path_test}/wheelhouse', prefix='piprepo build: ')
+    pip_index_url = f'file://{os.path.abspath(path_test)}/wheelhouse/simple'
+    pip_index_url = pip_index_url.replace('\\', '/')
+    
+    pipcl.fs_ensure_empty_dir(f'{path_test}/project')
+    pipcl.fs_write(
+            f'{path_test}/project/setup.py',
+            textwrap.dedent(f'''
+                    import pipcl
+                    
+                    def build():
+                        pipcl.fs_write(f'foo_cr.py', b'print("hello world")\\n', binary=1)
+                        return [
+                                ('foo_cr.py'),
+                                ]
+                    
+                    p = pipcl.Package(
+                            name = 'foo_cr',
+                            version = '1.2.3',
+                            fn_build = build,
+                            )
+                    
+                    build_wheel = p.build_wheel
+                    build_sdist = p.build_sdist
+                    '''),
+            )
+    pipcl.fs_write(
+            f'{path_test}/project/pyproject.toml',
+            textwrap.dedent('''
+                [build-system]
+                    requires = ['pipcl']
+                    build-backend = 'setup'
+                    backend-path = ['.']
+                ''')
+            )
+    
+    newfiles = pipcl.NewFiles(f'{path_test}/*.whl')
+    pipcl.run(f'''
+            pip wheel
+            -v
+            -w {path_test}
+            --extra-index-url {pip_index_url}
+            {path_test}/project
+            ''',
+            prefix=f'build {path_test}/project: ',
+            )
+    path_foo_wheel = newfiles.get_one()
+    
+    import zipfile
+    with zipfile.ZipFile(path_foo_wheel) as zf:
+        zf.extractall(f'{path_test}/extracted')
+    st = os.stat(f'{path_test}/extracted/foo_cr.py')
+    print(f'{st=}')
+    
+    pipcl.log('## Install project foo')
+    pipcl.run(f'pip uninstall -y foo_cr')
+    pipcl.run(f'pip install {path_foo_wheel}', prefix=f'pip install {path_foo_wheel}: ')
+    
+    pipcl.log('## Check we can import pipcl_test_module.')
+    pipcl.log(f'{sys.path=}')
+    import foo_cr
+    

@@ -816,6 +816,8 @@ class Package:
 
             def add(from_, to_):
                 if isinstance(from_, str):
+                    st = os.stat(from_)
+                    log(f'Adding file {os.path.abspath(from_)=}: {st=}')
                     z.write(from_, to_)
                     record.add_file(from_, to_, from_maxlen=from_maxlen)
                 elif isinstance(from_, bytes):
@@ -2752,6 +2754,7 @@ def git_get(
             log0(f'{os.getcwd()=}')
             log0(f'Cloning to: {os.path.abspath(local)}')
             command = f'git clone --config core.longpaths=true{depth_arg}'
+            command += f' --config core.autocrlf=input'
             if submodules:
                 command += f' --recursive --shallow-submodules'
             if branch:
