@@ -2543,6 +2543,7 @@ def git_get(
         devel=1,
         key=None,
         keyfile=None,
+        clone_extra=None,
         ):
     '''
     Creates/updates local checkout <local> of remote repository and returns
@@ -2605,6 +2606,10 @@ def git_get(
             Ssh key to use.
         keyfile:
             Ssh key file to use. Only used if <key> is None.
+        clone_extra:
+            If true, is added to any `git clone` command. For example
+            `clone_extra='--config core.autocrlf=input'` to avoid converting
+            text files to Windows line endings.
     '''
     log(f'{os.getcwd()=}')
     log(f'{remote=}')
@@ -2752,6 +2757,8 @@ def git_get(
             log0(f'{os.getcwd()=}')
             log0(f'Cloning to: {os.path.abspath(local)}')
             command = f'git clone --config core.longpaths=true{depth_arg}'
+            if clone_extra:
+                command += f' {clone_extra}'
             if submodules:
                 command += f' --recursive --shallow-submodules'
             if branch:
