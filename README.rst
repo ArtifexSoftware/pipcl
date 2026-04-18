@@ -188,7 +188,7 @@ Other
 Changelog
 ---------
 
-Version 2:
+Version 2 (2026-04-18):
 
 * Fixed bug in zip file generation on python<3.13.
 * Moved Python code into ``src/``.
