@@ -1,6 +1,12 @@
 import sys
 
-import pipcl
+try:
+    import pipcl
+except ImportError:
+    # This only happens if we are run directly without use of pyproject.toml,
+    # e.g. setup.py sdist.
+    sys.path.insert(0, 'src')
+    import pipcl
 
 
 def build():
