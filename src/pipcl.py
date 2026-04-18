@@ -4236,7 +4236,7 @@ class _Record:
     within a wheel.
     '''
     def __init__(self):
-        self.text = ''
+        self.lines = list()
 
     def add_content(self, content, to_, verbose=True):
         if isinstance(content, str):
@@ -4252,7 +4252,7 @@ class _Record:
         digest = digest.rstrip(b'=')
         digest = digest.decode('utf8')
 
-        self.text += f'{to_},sha256={digest},{len(content)}\n'
+        self.lines.append(f'{to_.replace(os.sep, "/")},sha256={digest},{len(content)}\n')
         if verbose:
             log2(f'Adding {to_}')
 
@@ -4269,9 +4269,12 @@ class _Record:
         used to include the RECORD file itself in the contents, with
         empty hash and size fields.
         '''
-        ret = self.text
+        self.lines.sort()
+        ret = ''.join(self.lines)
         if record_path:
             ret += f'{record_path},,\n'
+        log(f'{record_path=}')
+        log(f'ret is:\n{textwrap.indent(ret, "    ")}')
         return ret
 
 
