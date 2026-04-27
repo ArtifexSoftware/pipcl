@@ -28,7 +28,8 @@ p = pipcl.Package(
         summary='Python packaging operations, including PEP-517 support, for use by a setup.py script.',
         author='Artifex',
         author_email='julian.smith@artifex.com',
-        license='GNU AFFERO GPL 3.0',
+        license='AGPL-3.0-or-later',
+        license_files=['COPYING'],
         project_url=[
                 'homepage, https://github.com/ArtifexSoftware/pipcl',
                 ],
