@@ -188,7 +188,7 @@ Other
 Changelog
 ---------
 
-Version 3:
+Version 3 (2026-05-02):
 
 * Avoid unhelpful assert failures on Windows if paths differ only in
   upper/lower case.
