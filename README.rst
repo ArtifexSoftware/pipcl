@@ -188,6 +188,12 @@ Other
 Changelog
 ---------
 
+Version 3:
+
+* Avoid unhelpful assert failures on Windows if paths differ only in
+  upper/lower case.
+
+
 Version 2 (2026-04-18):
 
 * Fixed bug in zip file generation on python<3.13.
