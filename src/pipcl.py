@@ -1622,7 +1622,14 @@ class Package:
             p = os.path.join(self.root, path)
         p = os.path.realpath(os.path.abspath(p))
         if assert_within_root:
-            assert p.startswith(self.root+os.sep) or p == self.root, \
+            # We use os.path.realpath() here because, on Windows, it transforms
+            # paths to match the actual case on the case-insensitive but
+            # case-preserving filesystem. Otherwise we would assert-fail due
+            # to irrelevant differences in case on Windows' case-insensitive
+            # filing system.
+            root_real = os.path.realpath(self.root)
+            p_real = os.path.realpath(p)
+            assert p_real.startswith(root_real+os.sep) or p_real == root_real, \
                     f'Path not within root={self.root+os.sep!r}: {path=} {p=}'
         p_rel = os.path.relpath(p, self.root)
         return p, p_rel
