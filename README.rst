@@ -188,7 +188,7 @@ Other
 Changelog
 ---------
 
-Version 4
+Version 4 (2026-05-08)
 
 * Ignore encoding errors in ``pipcl.log()``, e.g. on Windows if default is not utf8.
 
