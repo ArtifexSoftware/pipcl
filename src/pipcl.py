@@ -4076,7 +4076,10 @@ def _log2(text):
     else:
         f = [_log_f]
     for ff in f:
-        ff.write(text)
+        try:
+            ff.write(text)
+        except UnicodeEncodeError:
+            ff.write("[[pipcl:Ignoring encoding error]]")
         ff.flush()
 
 def _log(text, level, caller, *, raw=False, nl=True, format_=None):
