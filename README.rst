@@ -188,6 +188,11 @@ Other
 Changelog
 ---------
 
+Version 4
+
+* Ignore encoding errors in ``pipcl.log()``, e.g. on Windows if default is not utf8.
+
+
 Version 3 (2026-05-02):
 
 * Avoid unhelpful assert failures on Windows if paths differ only in
