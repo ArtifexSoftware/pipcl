@@ -1895,7 +1895,6 @@ def build_extension(
                 optimise=optimise,
                 debug=debug,
                 compiler_extra=compiler_extra,
-                cpp=cpp,
                 python=True,
                 py_limited_api=py_limited_api,
                 source_paths=path_source,
@@ -2053,6 +2052,12 @@ def base_linker(vs=None, pythonflags=None, cpp=False, use_env=True):
     return linker, pythonflags
 
 
+def any_cpp(source_paths):
+    for source_path in source_paths:
+        if os.path.splitext(source_path)[1] in ('.cpp', '.c++'):
+            return True
+
+
 def compiler_command(
         *,
         includes=None,
@@ -2060,7 +2065,7 @@ def compiler_command(
         optimise=True,
         debug=False,
         compiler_extra='',
-        cpp=True,
+        cpp=None,
         python=False,
         py_limited_api=False,
         rpath=False,
@@ -2084,7 +2089,8 @@ def compiler_command(
         compiler_extra:
             Extra compiler flags. Can be None.
         cpp:
-            If true we tell SWIG to generate C++ code instead of C.
+            If true we tell SWIG to generate C++ code instead of C. If None we
+            use suffix of items in <source_paths>.
         python:
             If true we include flags for using Python headers and libraries.
         py_limited_api:
@@ -2104,6 +2110,9 @@ def compiler_command(
     defines_text = _flags( defines, '-D')
 
     py_limited_api2 = current_py_limited_api() if py_limited_api else None
+    
+    if cpp is None:
+        cpp = any_cpp(source_paths)
 
     compiler_command, pythonflags = base_compiler(cpp=cpp)
     # setuptools on Linux seems to use slightly different compile flags:
