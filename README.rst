@@ -188,7 +188,7 @@ Other
 Changelog
 ---------
 
-Version 5
+Version 5 (2026-05-18)
 
 * Automatically compile extension source with cc or c++ depending on suffix.
 
