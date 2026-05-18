@@ -188,6 +188,11 @@ Other
 Changelog
 ---------
 
+Version 5
+
+* Automatically compile extension source with cc or c++ depending on suffix.
+
+
 Version 4 (2026-05-08)
 
 * Ignore encoding errors in ``pipcl.log()``, e.g. on Windows if default is not utf8.
