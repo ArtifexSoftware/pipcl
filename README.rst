@@ -188,7 +188,7 @@ Other
 Changelog
 ---------
 
-Version 6
+Version 6 (2026-05-21)
 
 * In build_extension(), added new arg `compiler_extra_cpp`.
 
