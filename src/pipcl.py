@@ -805,19 +805,18 @@ class Package:
 
         log2(f'Creating wheel: {path}')
         os.makedirs(wheel_directory, exist_ok=True)
-        from_maxlen = 0
+        to_maxlen = 0
         for item in items:
-            from_, _ = self._fromto(item)
-            if isinstance(from_, str):
-                from_ = relpath(from_)
-                from_maxlen = max(from_maxlen, len(from_))
+            _, (_to_abs, to_rel) = self._fromto(item)
+            if isinstance(to_rel, str):
+                to_maxlen = max(to_maxlen, len(to_rel))
         record = _Record()
         with zipfile.ZipFile(path, 'w', self.wheel_compression, self.wheel_compresslevel) as z:
 
             def add(from_, to_):
                 if isinstance(from_, str):
                     z.write(from_, to_)
-                    record.add_file(from_, to_, from_maxlen=from_maxlen)
+                    record.add_file(from_, to_, to_maxlen=to_maxlen)
                 elif isinstance(from_, bytes):
                     zipfile_writestr(z, to_, from_, 0o644)
                     record.add_content(from_, to_)
@@ -1700,6 +1699,7 @@ def build_extension(
         optimise=True,
         debug=False,
         compiler_extra='',
+        compiler_extra_cpp='',
         linker_extra='',
         swig=None,
         cpp=True,
@@ -1751,6 +1751,8 @@ def build_extension(
             Whether to build with debug symbols.
         compiler_extra:
             Extra compiler flags. Can be None.
+        compiler_extra_cpp:
+            Extra c++ compiler flags. Can be None.
         linker_extra:
             Extra linker flags. Can be None.
         swig:
@@ -1895,6 +1897,7 @@ def build_extension(
                 optimise=optimise,
                 debug=debug,
                 compiler_extra=compiler_extra,
+                compiler_extra_cpp=compiler_extra_cpp,
                 python=True,
                 py_limited_api=py_limited_api,
                 source_paths=path_source,
@@ -2065,6 +2068,7 @@ def compiler_command(
         optimise=True,
         debug=False,
         compiler_extra='',
+        compiler_extra_cpp='',
         cpp=None,
         python=False,
         py_limited_api=False,
@@ -2088,6 +2092,8 @@ def compiler_command(
             Whether to build with debug symbols.
         compiler_extra:
             Extra compiler flags. Can be None.
+        compiler_extra:
+            Extra c++ compiler flags. Can be None.
         cpp:
             If true we tell SWIG to generate C++ code instead of C. If None we
             use suffix of items in <source_paths>.
@@ -2161,6 +2167,7 @@ def compiler_command(
 
                     {defines_text}
                     {compiler_extra}
+                    {compiler_extra_cpp}
 
                     {py_limited_api3}
                 '''
@@ -2181,6 +2188,7 @@ def compiler_command(
                     {includes_text}
                     {defines_text}
                     {compiler_extra}
+                    {compiler_extra_cpp if cpp else ''}
                     {py_limited_api3}
                     -c
                     -o {path_o}
@@ -2673,7 +2681,7 @@ def git_get(
             return os.path.abspath(text)
         
     assert bool(branch) ^ bool(tag) ^ bool(sha), \
-            f'Must specify exactly one of <branch>, <tag> or <tag>; {branch=} {tag=} {sha=}.'
+            f'Must specify exactly one of <branch>, <tag> or <sha>; {branch=} {tag=} {sha=}.'
     
     depth_arg = f' --depth {depth}' if depth else ''
     
@@ -4282,8 +4290,8 @@ class _Record:
         if verbose:
             log2(f'Adding {to_}')
 
-    def add_file(self, from_, to_, from_maxlen=0):
-        log1(f'Adding file: {os.path.relpath(from_).ljust(from_maxlen)} => {to_}')
+    def add_file(self, from_, to_, to_maxlen=0):
+        log1(f'Adding file: {to_.ljust(to_maxlen)} <= {os.path.relpath(from_)}')
         with open(from_, 'rb') as f:
             content = f.read()
         self.add_content(content, to_, verbose=False)
