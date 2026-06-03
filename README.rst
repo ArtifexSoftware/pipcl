@@ -91,7 +91,7 @@ can be modified to use ``pipcl.build_extension()``::
     build_wheel = p.build_wheel
     build_sdist = p.build_sdist
 
-For more details, see doctest examples in file:pipcl.py.
+For more details, see doctest examples in file:src/pipcl.py.
 
 
 Documentation
@@ -179,49 +179,60 @@ Other functions and classes
   
   * Has a command string that includes running of an appropriate vcvars, which can be used directly in compile and link command.
 
+Environment variables
+.....................
+* Environmental variable ``PIPCL_CHANGE_VERSIONS`` can be used to modify package versions.
+  
+  For more information see file:src/pipcl.py, class ``Package``,
+  method ``__init__()``, args ``version`` and ``requires_dist``.
+
 Other
 .....
 * Support for Pyodide.
 * Experimental support for Graal.
 
-
 Changelog
 ---------
 
-Version 6 (2026-05-21)
+**Version 7**
 
-* In build_extension(), added new arg `compiler_extra_cpp`.
+* Override matching package version numbers if ``PIPCL_CHANGE_VERSIONS`` is set.
 
 
-Version 5 (2026-05-18)
+**Version 6** (2026-05-21)
+
+* In build_extension(), added new arg ``compiler_extra_cpp``.
+
+
+**Version 5** (2026-05-18)
 
 * Automatically compile extension source with cc or c++ depending on suffix.
 
 
-Version 4 (2026-05-08)
+**Version 4** (2026-05-08)
 
 * Ignore encoding errors in ``pipcl.log()``, e.g. on Windows if default is not utf8.
 
 
-Version 3 (2026-05-02):
+**Version 3** (2026-05-02):
 
 * Avoid unhelpful assert failures on Windows if paths differ only in
   upper/lower case.
 
 
-Version 2 (2026-04-18):
+**Version 2** (2026-04-18):
 
 * Fixed bug in zip file generation on python<3.13.
 * Moved Python code into ``src/``.
 * Don't attempt to be usable in raw checkout.
 * Fixed doctest's to work on Windows.
-* Added python_version_tuple().
+* Added ``python_version_tuple()``.
 * Avoid spurious differences between wheels built on different systems:
 
-  * Sort lines in generated RECORD file.
+  * Sort lines in generated ``RECORD`` file.
   * Use ``--global core.autocrlf input`` when running ``git clone``.
 
 
-Version 1 (2026-04-16):
+**Version 1** (2026-04-16):
 
 * First release to pypi.org
