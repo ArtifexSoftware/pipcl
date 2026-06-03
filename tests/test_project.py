@@ -20,9 +20,7 @@ def test_project():
     
     pipcl.log('## Prepare a piprepo containing a pipcl wheel.')
     pipcl.run(f'pip install --upgrade piprepo "setuptools<81"', prefix='pip install piprepo: ')
-    newfiles = pipcl.NewFiles(f'{path_test}/wheelhouse/*.whl')
     pipcl.run(f'pip wheel -w {path_test}/wheelhouse {g_root}', prefix='pip wheel pipcl: ')
-    path_wheel = newfiles.get_one()
     pipcl.run(f'piprepo build {path_test}/wheelhouse', prefix='piprepo build: ')
     pip_index_url = f'file://{os.path.abspath(path_test)}/wheelhouse/simple'
     pip_index_url = pip_index_url.replace('\\', '/')

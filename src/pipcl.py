@@ -414,6 +414,32 @@ class Package:
                 Used for metadata `Version`.
                 A string, the version of the Python package. Also see PEP-440
                 `Version Identification and Dependency Specification`.
+                
+                Special handling of PIPCL_CHANGE_VERSIONS:
+                    If environment variable PIPCL_CHANGE_VERSIONS is set, it is
+                    used to override `version`. PIPCL_CHANGE_VERSIONS should
+                    contain one or more lines matching:
+                        <package-name-regex> <new-version>
+                    If any line's <package-name-regex> matches <name>, then
+                    <version> is changed to the line's <new-version>.
+
+                    For example if foo/ contains a package called foo that uses
+                    pipcl, then this:
+                        $ export PIPCL_CHANGE_VERSIONS='
+                        > ^foo$ 1.2.3.4
+                        > ^bar$ 3.4.5
+                        '
+                        $ pip wheel foo/
+                        ...
+                        $
+                    
+                    * Will create a foo wheel with version 1.2.3.4,
+                      regardless of what version is specified in foo/setup.py.
+                    * Any dependency of package foo on package bar,
+                      will be changed to `bar==3.4.5`.
+
+                    Note that if <package-name-regex> is not in the form `^...$`,
+                    it may match extra unintended package names.
             
             author:
                 Used for metadata `Author`.
@@ -490,6 +516,12 @@ class Package:
                 Used for metadata `Requires-Dist`.
                 A string or list of strings, Python packages required
                 at runtime. None items are ignored.
+                
+                If environment variable PIPCL_CHANGE_VERSIONS is set, version
+                numbers for matching items in <requires_dist> will be
+                overridden - see description of <version> for details. (This
+                will overwrite matching requirements to be in the simple form
+                `<name>==<version>`; any other elements will be lost.)
             
             requires_external:
                 Used for metadata `Requires-External`.
@@ -719,7 +751,47 @@ class Package:
         # a command that will print includes/libs from graal_py's sysconfig.
         #
         self.graal_legacy_python_config = True
-
+        
+        # Override version numbers if PIPCL_CHANGE_VERSIONS is set.
+        #
+        PIPCL_CHANGE_VERSIONS = os.environ.get('PIPCL_CHANGE_VERSIONS')
+        if PIPCL_CHANGE_VERSIONS:
+            log(f'Modifying versions for {PIPCL_CHANGE_VERSIONS=}.')
+            def version_override(name):
+                log(f'Looking at changing version of {name=}.')
+                for line in PIPCL_CHANGE_VERSIONS.split('\n'):
+                    if not line:
+                        continue
+                    nv = line.split(' ')
+                    assert len(nv) == 2, f'Incorrect line in PIPCL_CHANGE_VERSIONS, should be `<regex> <version>`: {line!r}'
+                    regex_name, replace_version = nv
+                    m = re.match(regex_name, name)
+                    if m:
+                        log(f'From {PIPCL_CHANGE_VERSIONS=}, changing version to {replace_version!r}')
+                        return replace_version
+                log(f'No match.')
+            version2 = version_override(self.name)
+            if version2:
+                log(f'Changing {self.version=} to {version2=}.')
+                self.version = version2
+            
+            if self.requires_dist:
+                import packaging.requirements
+                requires_dist2 = self.requires_dist
+                if isinstance(requires_dist2, str):
+                    requires_dist2 = [requires_dist2]
+                else:
+                    requires_dist2 = list(requires_dist2)
+                for i, prereq in enumerate(requires_dist2):
+                    requirement = packaging.requirements.Requirement(prereq)
+                    version2 = version_override(requirement.name)
+                    if version2:
+                        # This loses information if the requirement contains
+                        # 'extra' names or environment markers.
+                        requires_dist2[i] = f'{requirement.name}=={version2}'
+                log(f'Changing {self.requires_dist=} to {requires_dist2}.')
+                self.requires_dist = requires_dist2
+                
     def build_wheel(self,
             wheel_directory,
             config_settings=None,
