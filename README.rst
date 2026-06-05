@@ -194,7 +194,7 @@ Other
 Changelog
 ---------
 
-**Version 7**
+**Version 7** (2026-06-05)
 
 * Override matching package version numbers if ``PIPCL_CHANGE_VERSIONS`` is set.
 
