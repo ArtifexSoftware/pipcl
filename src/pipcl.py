@@ -754,43 +754,28 @@ class Package:
         
         # Override version numbers if PIPCL_CHANGE_VERSIONS is set.
         #
-        PIPCL_CHANGE_VERSIONS = os.environ.get('PIPCL_CHANGE_VERSIONS')
-        if PIPCL_CHANGE_VERSIONS:
-            log(f'Modifying versions for {PIPCL_CHANGE_VERSIONS=}.')
-            def version_override(name):
-                log(f'Looking at changing version of {name=}.')
-                for line in PIPCL_CHANGE_VERSIONS.split('\n'):
-                    if not line:
-                        continue
-                    nv = line.split(' ')
-                    assert len(nv) == 2, f'Incorrect line in PIPCL_CHANGE_VERSIONS, should be `<regex> <version>`: {line!r}'
-                    regex_name, replace_version = nv
-                    m = re.match(regex_name, name)
-                    if m:
-                        log(f'From {PIPCL_CHANGE_VERSIONS=}, changing version to {replace_version!r}')
-                        return replace_version
-                log(f'No match.')
-            version2 = version_override(self.name)
-            if version2:
-                log(f'Changing {self.version=} to {version2=}.')
-                self.version = version2
-            
-            if self.requires_dist:
-                import packaging.requirements
-                requires_dist2 = self.requires_dist
-                if isinstance(requires_dist2, str):
-                    requires_dist2 = [requires_dist2]
-                else:
-                    requires_dist2 = list(requires_dist2)
-                for i, prereq in enumerate(requires_dist2):
-                    requirement = packaging.requirements.Requirement(prereq)
-                    version2 = version_override(requirement.name)
-                    if version2:
-                        # This loses information if the requirement contains
-                        # 'extra' names or environment markers.
-                        requires_dist2[i] = f'{requirement.name}=={version2}'
-                log(f'Changing {self.requires_dist=} to {requires_dist2}.')
-                self.requires_dist = requires_dist2
+        version2 = version_override(self.name)
+        if version2:
+            log(f'Changing {self.version=} to {version2=}.')
+            self.version = version2
+            _assert_version_pep_440(self.version)
+
+        if self.requires_dist:
+            import packaging.requirements
+            requires_dist2 = self.requires_dist
+            if isinstance(requires_dist2, str):
+                requires_dist2 = [requires_dist2]
+            else:
+                requires_dist2 = list(requires_dist2)
+            for i, prereq in enumerate(requires_dist2):
+                requirement = packaging.requirements.Requirement(prereq)
+                version2 = version_override(requirement.name)
+                if version2:
+                    # This loses information if the requirement contains
+                    # 'extra' names or environment markers.
+                    requires_dist2[i] = f'{requirement.name}=={version2}'
+            log(f'Changing {self.requires_dist=} to {requires_dist2}.')
+            self.requires_dist = requires_dist2
                 
     def build_wheel(self,
             wheel_directory,
@@ -1756,6 +1741,33 @@ class Package:
 
 
 _extensions_to_py_limited_api = dict()
+
+
+def version_override(name):
+    '''
+    If PIPCL_CHANGE_VERSIONS is set and contains a match for <name>, we return
+    the override version.
+
+    Otherwise we return None.
+    
+    This should be called by a setup.py's get_requires_for_build_wheel() for
+    each item it returns.
+    '''
+    PIPCL_CHANGE_VERSIONS = os.environ.get('PIPCL_CHANGE_VERSIONS')
+    if PIPCL_CHANGE_VERSIONS:
+        log(f'{PIPCL_CHANGE_VERSIONS=}.')
+        log(f'Looking at changing version of {name=}.')
+        for line in PIPCL_CHANGE_VERSIONS.split('\n'):
+            if not line:
+                continue
+            nv = line.split(' ')
+            assert len(nv) == 2, f'Incorrect line in PIPCL_CHANGE_VERSIONS, should be `<regex> <version>`: {line!r}'
+            regex_name, replace_version = nv
+            m = re.match(regex_name, name.lower())
+            if m:
+                log(f'From {PIPCL_CHANGE_VERSIONS=}, changing version to {replace_version!r}')
+                return replace_version
+        log(f'No match.')
 
 
 def build_extension(
