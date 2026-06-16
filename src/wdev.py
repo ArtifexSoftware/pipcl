@@ -287,11 +287,11 @@ class WindowsCpu:
         .bits
             32 or 64.
         .windows_subdir
-            Empty string or `x64/`.
+            Empty string, `x64/`, `arm64` etc.
         .windows_name
-            `x86` or `x64`.
+            `x86`,`x64`, `arm64` etc.
         .windows_config
-            `x64` or `Win32`, e.g. for use in `/Build Release|x64`.
+            `x64`, `Win32`, `arm64` etc, e.g. for use in `/Build Release|x64`.
         .windows_suffix
             `64` or empty string.
     ARM members are not fixed yet.
