@@ -194,6 +194,14 @@ Other
 Changelog
 ---------
 
+**Version 8**
+
+* Improve support for ``PIPCL_CHANGE_VERSIONS``:
+
+  * Convert package name to lower case before matching with ``PIPCL_CHANGE_VERSIONS``.
+  * Provide ``pipcl.version_override()`` for use by a setup.py's ``get_requires_for_build_wheel()``.
+
+
 **Version 7** (2026-06-05)
 
 * Override matching package version numbers if ``PIPCL_CHANGE_VERSIONS`` is set.
