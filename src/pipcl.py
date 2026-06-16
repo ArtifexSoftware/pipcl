@@ -2170,7 +2170,11 @@ def compiler_command(
             If true we tell SWIG to generate C++ code instead of C. If None we
             use suffix of items in <source_paths>.
         python:
-            If true we include flags for using Python headers and libraries.
+            If true:
+            * We include flags for using Python headers and libraries.
+            * We predefine Py_GIL_DISABLED if
+              sysconfig.get_config_var('Py_GIL_DISABLED')==1 (i.e. free-thread
+              build).
         py_limited_api:
             If true we build for current Python's limited API / stable ABI.
 
@@ -2225,6 +2229,7 @@ def compiler_command(
                     # Include paths:
                     {includes_text}
                     {pythonflags.includes if python else ''}      # Include path for Python headers.
+                    {'/D Py_GIL_DISABLED' if python and sysconfig.get_config_var('Py_GIL_DISABLED')==1 else ''}
 
                     # Code generation:
                     {optimise2}
@@ -2257,6 +2262,7 @@ def compiler_command(
                 {compiler_command}
                     {general_flags.strip()}
                     {pythonflags.includes if python else ''}
+                    {'-D Py_GIL_DISABLED' if python and sysconfig.get_config_var('Py_GIL_DISABLED')==1 else ''}
                     {includes_text}
                     {defines_text}
                     {compiler_extra}
