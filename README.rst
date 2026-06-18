@@ -196,13 +196,13 @@ Other
 Changelog
 ---------
 
-**Version 9**
+**Version 9** (2026-06-18)
 
 * Added added git_info_py().
 * Added version_to_tuple().
 
 
-**Version 8**
+**Version 8** (2026-06-17)
 
 * Improve support for ``PIPCL_CHANGE_VERSIONS``:
 
