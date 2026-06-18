@@ -7,6 +7,8 @@ import subprocess
 import sys
 import textwrap
 
+import pipcl
+
 
 def test_pylint():
     subprocess.run(f'pip install -U pylint', shell=1, check=1)
@@ -97,7 +99,7 @@ def test_codespell():
                 --ignore-multiline-regex 'codespell:ignore-begin.*codespell:ignore-end'
             ''')
     
-    git_files = glob.glob(f'{root}/*.py') + glob.glob(f'{root}/*/*.py')
+    git_files = pipcl.git_items(root)
     for p in git_files:
         _, ext = os.path.splitext(p)
         if ext in []:
