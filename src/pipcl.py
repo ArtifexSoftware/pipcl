@@ -4803,6 +4803,67 @@ def python_version_tuple():
     return tuple(ret)
 
 
+def str_to_int(s, replace=str):
+    '''
+    Returns string converted to int, with configurable behaviour if
+    the string is not convertible.
+    
+    Args:
+        s
+            The input string.
+        replace:
+            Governs what we do if int(s) fails:
+                None:
+                    Raise.
+                str:
+                    Return the string <s>.
+                Otherwise:
+                    Return <replace> itself.
+    '''
+    try:
+        ret = int(s)
+    except Exception:
+        if replace is None:
+            raise
+        elif replace is str:
+            return s
+        else:
+            ret = replace
+    return ret
+
+
+def version_to_tuple(version, replace=str):
+    '''
+    Returns a tuple containing each item from <version> converted
+    to an int.
+    
+    If an item does not convert to an int, behaviour depends on <replace>.
+    Args:
+        version
+            A string containing items separated by '.'
+        replace
+            Governs what we do if conversion of item to int fails:
+                None:
+                    Raise.
+                str:
+                    Use the string value.
+                Otherwise:
+                    Use <replace> itself.
+            
+    `.`-separated string as tuple, with each item converted to an int,
+    or kept as a string if the conversion failed (or to <replace> if not `str`.
+    
+    >>> version_to_tuple('1.2.3')
+    (1, 2, 3)
+    >>> version_to_tuple('1.2.3.alpha')
+    (1, 2, 3, 'alpha')
+    >>> version_to_tuple('1.2.3.alpha', replace=0)
+    (1, 2, 3, 0)
+    '''
+    version2 = version.split('.')
+    return tuple(str_to_int(i, replace) for i in version2)
+
+
 def venv_enter_cmd(venv_name):
     '''
     Returns command that will enter venv, different on Windows vs Unix.
