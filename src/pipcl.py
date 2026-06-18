@@ -2551,6 +2551,71 @@ def git_info( directory):
     return sha, comment, diff, branch
 
 
+def git_info_py(
+        path,
+        *,
+        check = True,
+        name_branch = 'branch',
+        name_comment = 'comment',
+        name_diff = 'diff',
+        name_diff_n = 'diff_n',
+        name_sha = 'sha',
+        prefix = 'git_',
+        ):
+    '''
+    Returns python code that defines variables that contain
+    information about a git checkout, typically the checkout
+    that is being used to build a package.
+    Args:
+        path:
+            Path of git checkout.
+        check:
+            If true we raise if we fail to get git info (e.g. <path> is not a
+            Git checkout), otherwise the returned text sets all variables to
+            None.
+        name_branch:
+            Name of variable containing git branch, or false to omit.
+        name_comment:
+            Name of variable containing git comment, or false to omit.
+        name_diff:
+            Name of variable containing output of git diff, or false to omit.
+        name_diff_n:
+            Name of variable containing length of output of git diff.
+        name_sha:
+            Name of variable containing git sha, or false to omit.
+        prefix:
+            Prefix of each variable name.
+    Example output:
+         git_branch = 'main'
+         comment = 'Add wibble'
+         git_diff = ''
+         git_diff_n = 0
+         git_sha = 'aa00d79773e1e3c4176b59ac76bfef89830bd289'
+    '''
+    try:
+        sha, comment, diff, branch = git_info(path)
+    except Exception:
+        if check:
+            raise
+        else:
+            sha, comment, diff, branch = None
+            diff_len = None
+    else:
+        diff_len = len(diff)
+    ret = ''
+    if name_branch:
+        ret += f'{prefix}{name_branch} = {branch!r}\n'
+    if name_comment:
+        ret += f'{prefix}{name_comment} = {comment!r}\n'
+    if name_diff:
+        ret += f'{prefix}{name_diff} = {diff!r}\n'
+    if name_sha:
+        ret += f'{prefix}{name_diff_n} = {diff_len!r}\n'
+    if name_sha:
+        ret += f'{prefix}{name_sha} = {sha!r}\n'
+    return ret
+
+
 def get_time_iso_8601(text):
     '''
     Converts ISO-8601 text to Unix time.
