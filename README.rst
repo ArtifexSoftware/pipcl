@@ -175,6 +175,8 @@ Other functions and classes
 * ``pipcl.swig*()``: build and use swig from source;
   this can be useful on MacOS where some swig versions appear to generate incorrect code.
 
+* ``version_to_tuple()``: get numerical tuple from '.'-separated version string.
+
 * Class ``pipcl.wdev.WindowsVS``: on Windows, search for specific/latest versions of Visual Studio compiler (cl.exe) and linker (link.exe).
   
   * Has a command string that includes running of an appropriate vcvars, which can be used directly in compile and link command.
@@ -193,6 +195,12 @@ Other
 
 Changelog
 ---------
+
+**Version 9**
+
+* Added added git_info_py().
+* Added version_to_tuple().
+
 
 **Version 8**
 
