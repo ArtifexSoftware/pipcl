@@ -196,6 +196,8 @@ Other
 Changelog
 ---------
 
+**Version 10**
+
 * Fixed pipcl.git_info_py() in a non-git-checkout.
 
 
