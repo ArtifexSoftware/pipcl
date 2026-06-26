@@ -196,6 +196,9 @@ Other
 Changelog
 ---------
 
+* Fixed pipcl.git_info_py() in a non-git-checkout.
+
+
 **Version 9** (2026-06-18)
 
 * Added added git_info_py().
