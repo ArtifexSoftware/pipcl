@@ -2,6 +2,7 @@
 Finds locations of Windows command-line development tools.
 '''
 
+import json
 import os
 import platform
 import glob
@@ -33,96 +34,51 @@ class WindowsVS:
         .devenv:    C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.com
         .tools:     C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.com
         .toolvs:    [142, 143]
+        
+        .vsversion: 17.14.37111.16
+        .product_line_version:  2017, 2019, 2022, 18 etc.
+        .vswhere:   Raw information from vswhere.exe.
 
     `.csc` is C# compiler; will be None if not found.
     '''
-    def __init__(
-            self,
-            *,
-            year=None,
-            grade=None,
-            version=None,
-            cpu=None,
-            directory=None,
-            verbose=False,
-            ):
+    def __init__(self, *args, **kwargs):
         '''
-        Args:
-            year:
-                None or, for example, `2019`. If None we use environment
-                variable WDEV_VS_YEAR if set.
-            grade:
-                None or, for example, one of:
-
-                * `Community`
-                * `Professional`
-                * `Enterprise`
-
-                If None we use environment variable WDEV_VS_GRADE if set.
-            version:
-                None or, for example: `14.28.29910`. If None we use environment
-                variable WDEV_VS_VERSION if set.
-            cpu:
-                None or a `WindowsCpu` instance.
-            directory:
-                Ignore year, grade, version and cpu and use this directory
-                directly.
-            verbose:
-                .
+        Internal use only. Use windows_vs() or windows_vs_multiple() to create instance(s).
+        '''
+        if kwargs:
+            # Backwards compatibility only - callers should use windows_vs().
+            assert not args
+            year = kwargs.pop('year', None)
+            grade = kwargs.pop('grade', None)
+            version = kwargs.pop('version', None)
+            cpu = kwargs.pop('cpu', None)
+            directory = kwargs.pop('directory', None)
+            assert not kwargs, f'Unrecognised args: {kwargs=}'
             
-        '''
-        if year is not None:
-            year = str(year)    # Allow specification as a number.
-        def default(value, name):
-            if value is None:
-                name2 = f'WDEV_VS_{name.upper()}'
-                value = os.environ.get(name2)
-                if value is not None:
-                    _log(f'Setting {name} from environment variable {name2}: {value!r}')
-            return value
+            vs = windows_vs(year=year, grade=grade, version=version, directory=directory)
+            # Want to set self = vs, but that's not going to work, so instead
+            # we just construct from vs.vswhere, cpu and version.
+            vswhere = vs.vswhere
+        else:
+            assert len(args) == 2 and not kwargs, f'{args=} {kwargs=}'
+            vswhere, cpu = args
+        
+        if not cpu:
+            cpu = WindowsCpu()
+        
+        #pipcl.log(f'vswhere:\n{json.dumps(vswhere, indent="    ")}')
+        product_line_version = vswhere['catalog']['productLineVersion'] # E.g. '2022'.
+        vsversion = vswhere['catalog']['buildVersion']  # E.g. '17.14.37111.16'.
+        grade = vswhere['productId'].split('.')[-1] # E.g. 'Professional'.
+        directory = vswhere['installationPath'] # E.g. C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional
+        version = None  # Compiler/linker version is not specified in vswhere.
+        year = None
+        
         try:
-            year = default(year, 'year')
-            grade = default(grade, 'grade')
-            version = default(version, 'version')
-
-            if not cpu:
-                cpu = WindowsCpu()
-
-            if not directory:
-                # Find `directory`.
-                #
-                pattern = _vs_pattern(year, grade)
-                directories = glob.glob( pattern)
-                if verbose:
-                    _log( f'Matches for: {pattern=}')
-                    _log( f'{directories=}')
-                assert directories, f'No match found for {pattern=}.'
-                directories.sort()
-                directory = directories[-1]
-
             # Find `devenv`.
             #
             devenv = f'{directory}\\Common7\\IDE\\devenv.com'
             assert os.path.isfile( devenv), f'Does not exist: {devenv}'
-
-            # Extract `year` and `grade` from `directory`.
-            #
-            # We use r'...' for regex strings because an extra level of escaping is
-            # required for backslashes.
-            #
-            regex = rf'^C:\\Program Files.*\\Microsoft Visual Studio\\([^\\]+)\\([^\\]+)'
-            m = re.match( regex, directory)
-            assert m, f'No match: {regex=} {directory=}'
-            year2 = m.group(1)
-            grade2 = m.group(2)
-            if year:
-                assert year2 == year
-            else:
-                year = year2
-            if grade:
-                assert grade2 == grade
-            else:
-                grade = grade2
 
             # Find vcvars.bat.
             #
@@ -141,30 +97,28 @@ class WindowsVS:
             
             # Find cl.exe.
             #
-            cl_pattern = f'{directory}\\VC\\Tools\\MSVC\\{version if version else "*"}\\bin\\Host{cpu.windows_name}\\{cpu.windows_name}\\cl.exe'
+            cl_pattern = f'{directory}\\VC\\Tools\\MSVC\\{version or "*"}\\bin\\Host{cpu.windows_name}\\{cpu.windows_name}\\cl.exe'
             cl_s = glob.glob( cl_pattern)
             assert cl_s, f'No match for: {cl_pattern}'
             cl_s.sort()
-            cl = cl_s[ -1]
+            cl = cl_s[-1]
 
             # Extract `version` from cl.exe's path.
             #
             m = re.search( rf'\\VC\\Tools\\MSVC\\([^\\]+)\\bin\\Host{cpu.windows_name}\\{cpu.windows_name}\\cl.exe$', cl)
             assert m
             version2 = m.group(1)
-            if version:
-                assert version2 == version
-            else:
-                version = version2
+            #pipcl.log(f'Overriding {version=} to {version2=}.')
+            version = version2
             assert version
 
             # Find link.exe.
             #
-            link_pattern = f'{directory}\\VC\\Tools\\MSVC\\{version}\\bin\\Host{cpu.windows_name}\\{cpu.windows_name}\\link.exe'
+            link_pattern = f'{directory}\\VC\\Tools\\MSVC\\{version or "*"}\\bin\\Host{cpu.windows_name}\\{cpu.windows_name}\\link.exe'
             link_s = glob.glob( link_pattern)
             assert link_s, f'No match for: {link_pattern}'
             link_s.sort()
-            link = link_s[ -1]
+            link = link_s[-1]
 
             # Find csc.exe.
             #
@@ -193,8 +147,8 @@ class WindowsVS:
             for p in glob.glob(f'{directory}\\VC/Auxiliary\\Build\\Microsoft.VCToolsVersion.v*.default.txt'):
                 tools.append(p)
                 leaf = os.path.basename(p)
-                pipcl.log(f'{p=}')
-                pipcl.log(f'{leaf=}')
+                #pipcl.log(f'{p=}')
+                #pipcl.log(f'{leaf=}')
                 m = re.match('^Microsoft.VCToolsVersion.v([0-9]+).default.txt$', leaf)
                 toolv = int(m.group(1))
                 toolvs.append(toolv)
@@ -208,10 +162,13 @@ class WindowsVS:
             self.msbuild = msbuild
             self.vcvars = vcvars
             self.version = version
-            self.year = year
+            self.year = year or vsversion_to_year(vsversion)
             self.cpu = cpu
             self.tools = tools
             self.toolvs = toolvs
+            self.vsversion = vsversion
+            self.product_line_version = product_line_version
+            self.vswhere = vswhere
         
         except Exception as e:
             raise Exception( f'Unable to find Visual Studio {year=} {grade=} {version=} {cpu=} {directory=}') from e
@@ -222,6 +179,7 @@ class WindowsVS:
         '''
         ret = textwrap.dedent(f'''
                 year:         {self.year}
+                vsversion:    {self.vsversion}
                 grade:        {self.grade}
                 version:      {self.version}
                 directory:    {self.directory}
@@ -232,7 +190,7 @@ class WindowsVS:
                 msbuild:      {self.msbuild}
                 devenv:       {self.devenv}
                 cpu:          {self.cpu}
-                ''')
+                ''').strip() + '\n'
         ret += 'tools:\n'
         for p in self.tools:
             ret += f'    {p}\n'
@@ -246,6 +204,7 @@ class WindowsVS:
         items = list()
         for name in (
                 'year',
+                'vsversion',
                 'grade',
                 'version',
                 'directory',
@@ -261,23 +220,198 @@ class WindowsVS:
         return ' '.join(items)
 
 
-def _vs_pattern(year=None, grade=None):
-    return f'C:\\Program Files*\\Microsoft Visual Studio\\{year if year else "2*"}\\{grade if grade else "*"}'
+_vsversion_year = [
+        (2017, 15),
+        (2019, 16),
+        (2022, 17),
+        (2026, 18),
+        ]
+
+def vsversion_to_year(vsversion, check=0):
+    if isinstance(vsversion, str):
+        vsversion = pipcl.version_to_tuple(vsversion)
+    for y, v in _vsversion_year:
+        if vsversion[0] == v:
+            return y
+    if check:
+        t = ', '.join([v for (y, v) in _vsversion_year])
+        assert 0, f'In {vsversion=}, unrecognised {vsversion[0]=}, must be one of {t}.'
+
+def year_to_vsversion(year, check=0):
+    if isinstance(year, str):
+        year = int(year)
+    for y, v in _vsversion_year:
+        if year == y:
+            return v,
+    if check:
+        t = ', '.join([str(y) for (y, v) in _vsversion_year])
+        assert 0, f'Unrecognised {year=} must be one of {t}.'
 
 
-def windows_vs_multiple(year=None, grade=None, verbose=0):
+def version_startswith(v, prefix):
+    if isinstance(v, str):
+        v = pipcl.version_to_tuple(v)
+    if isinstance(prefix, str):
+        prefix = pipcl.version_to_tuple(prefix)
+    return v[:len(prefix)] == prefix
+    
+
+def windows_vs_multiple(*, year=None, vsversion=None, grade=None, version=None, directory=None, cpu=None, verbose=0):
     '''
-    Returns list of WindowsVS instances.
+    Returns list of matching WindowsVS instances, using vswhere.exe
+    
+    Args:
+        year:
+            None or one of:
+                2017
+                2019
+                2022
+                2026
+            These map to visual studio versions 15, 16, 17 and 18.
+            Must not be specified with <vsversion>.
+        vsversion:
+            None or Visual Studio build version, e.g. '17.14.37111.16'.
+            Must not be specified with <year>.
+        grade:
+            None or one of:
+
+            * `Community`
+            * `Professional`
+            * `Enterprise`
+
+            If None we use environment variable WDEV_VS_GRADE if set.
+        version:
+            None or, for example: `14.28.29910`. If None we use environment
+            variable WDEV_VS_VERSION if set. This is not matched against output
+            from vswhere.exe, instead identifies subdirectory in the cl.exe and
+            link.exe paths.
+        directory:
+            None or the installation directory.
+        cpu:
+            None or a `WindowsCpu` instance.
+      
+      Example vswhere.exe information about a vs install:
+      
+          {
+            "instanceId": "c5be8a09",
+            "installDate": "2025-11-27T16:58:25Z",
+            "installationName": "VisualStudio/17.14.29+37111.16.-march.2026-",
+            "installationPath": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional",
+            "installationVersion": "17.14.37111.16",
+            "productId": "Microsoft.VisualStudio.Product.Professional",
+            "productPath": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\Common7\\IDE\\devenv.exe",
+            "state": 4294967295,
+            "isComplete": true,
+            "isLaunchable": true,
+            "isPrerelease": false,
+            "isRebootRequired": false,
+            "displayName": "Visual Studio Professional 2022",
+            "description": "Professional IDE best suited to small teams",
+            "channelId": "VisualStudio.17.Release",
+            "channelUri": "https://aka.ms/vs/17/release/channel",
+            "enginePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\resources\\app\\ServiceHub\\Services\\Microsoft.VisualStudio.Setup.Service",
+            "installedChannelId": "VisualStudio.17.Release",
+            "installedChannelUri": "https://aka.ms/vs/17/release/channel",
+            "releaseNotes": "https://docs.microsoft.com/en-us/visualstudio/releases/2022/release-notes-v17.14#17.14.29",
+            "resolvedInstallationPath": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional",
+            "thirdPartyNotices": "https://go.microsoft.com/fwlink/?LinkId=661288",
+            "updateDate": "2026-04-03T10:46:24.9483366Z",
+            "catalog": {
+              "buildBranch": "d17.14",
+              "buildVersion": "17.14.37111.16",
+              "id": "VisualStudio/17.14.29+37111.16.-march.2026-",
+              "localBuild": "build-lab",
+              "manifestName": "VisualStudio",
+              "manifestType": "installer",
+              "productDisplayVersion": "17.14.29 (March 2026)",
+              "productLine": "Dev17",
+              "productLineVersion": "2022",
+              "productMilestone": "RTW",
+              "productMilestoneIsPreRelease": "False",
+              "productName": "Visual Studio",
+              "productPatchVersion": "29",
+              "productPreReleaseMilestoneSuffix": "1.0",
+              "productReleaseNameSuffix": "(March 2026)",
+              "productSemanticVersion": "17.14.29+37111.16.-march.2026-",
+              "requiredEngineVersion": "3.14.2086.54749"
+            },
+            "properties": {
+              "appLocalWPF": "false",
+              "campaignId": "",
+              "channelManifestId": "VisualStudio.17.Release/17.14.29+37111.16.-march.2026-",
+              "includeRecommended": "1",
+              "nickname": "",
+              "setupEngineFilePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\setup.exe"
+            }
+          }
+    
     '''
+    year = year or os.environ.get('WDEV_VS_YEAR')
+    grade = grade or os.environ.get('WDEV_VS_GRADE')
+    version = version or os.environ.get('WDEV_VS_VERSION')
+    
+    if year:
+        # We always convert year to vsversion.
+        assert not vsversion
+        vsversion = year_to_vsversion(year, check=1)
+    elif vsversion:
+        assert not year
+        vsversion = pipcl.version_to_tuple(vsversion)
+        year = vsversion_to_year(vsversion, check=1)
+    
+    vss_json = pipcl.run(rf'"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -format json', capture=1)
+    vss = json.loads(vss_json)
+    #pipcl.log(f'vss:\n{json.dumps(vss, indent="    ")}')
+    
+    def select(wvs):
+        if vsversion and not version_startswith(wvs.vsversion, vsversion):
+            #pipcl.log(f'Returning false because {vsversion=} {wvs.vsversion=}')
+            return False
+        if grade and wvs.grade != grade:
+            #pipcl.log(f'Returning false because {grade=} {wvs.grade=}')
+            return False
+        if directory and wvs.directory != directory:
+            #pipcl.log(f'Returning false because {directory=} {wvs.directory=}')
+            return False
+        #pipcl.log(f'Returning true.')
+        return True
     ret = list()
-    directories = glob.glob(_vs_pattern(year, grade))
-    for directory in directories:
-        vs = WindowsVS(directory=directory)
-        if verbose:
-            _log(vs.description_ml())
-        ret.append(vs)
+    for vs in vss:
+        wvs = WindowsVS(vs, cpu)
+        #pipcl.log(f'wvs:\n{wvs.description_ml("    ")}')
+        if select(wvs):
+            ret.append(wvs)
     return ret
 
+
+def windows_vs(*, year=None, grade=None, version=None, directory=None, verbose=0, check=1):
+    '''
+    Returns best matching WindowsVS.
+    Args are same as windows_vs_multiple().
+    check:
+        If true (the default) we raise exception if not found, otherwise we return None.
+    '''
+    wvss = windows_vs_multiple(year=year, grade=grade, version=version, directory=directory, verbose=verbose)
+    if not wvss:
+        if check:
+            wvss = windows_vs_multiple()
+            text = f'No Visual Studio found matching {year=} {grade=} {version=} {directory=}.\n'
+            text += f'Available installations are ({len(wvss)}):\n'
+            for wvs in wvss:
+                text += f'\n'
+                text += wvs.description_ml('    ')
+            raise Exception(text)
+        else:
+            return None
+    def key(wvs):
+        grades = ['Community', 'Professional', 'Enterprise']
+        return (
+                pipcl.version_to_tuple(wvs.version),
+                grades.index(wvs.grade),
+                )
+    wvss.sort(key=key)
+    return wvss[-1]
+    
 
 class WindowsCpu:
     '''

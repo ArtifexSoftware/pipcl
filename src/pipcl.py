@@ -1504,7 +1504,7 @@ class Package:
                     g_verbose += 1
                 else:
                     assert 0, f'Unrecognised {arg=}'
-            vs = wdev.WindowsVS(year=year, grade=grade, version=version)
+            vs = wdev.windows_vs(year=year, grade=grade, version=version)
             print(f'Visual Studio is:\n{vs.description_ml("    ")}')
 
         # pylint: disable=too-many-nested-blocks
@@ -2090,7 +2090,7 @@ def base_compiler(vs=None, pythonflags=None, cpp=False, use_env=True):
         pass
     elif windows():
         if not vs:
-            vs = wdev.WindowsVS()
+            vs = wdev.windows_vs()
         cc = f'"{vs.vcvars}"&&"{vs.cl}"'
     elif wasm():
         cc = 'em++' if cpp else 'emcc'
@@ -2134,7 +2134,7 @@ def base_linker(vs=None, pythonflags=None, cpp=False, use_env=True):
         pass
     elif windows():
         if not vs:
-            vs = wdev.WindowsVS()
+            vs = wdev.windows_vs()
         linker = f'"{vs.vcvars}"&&"{vs.link}"'
     elif wasm():
         linker = 'em++' if cpp else 'emcc'
