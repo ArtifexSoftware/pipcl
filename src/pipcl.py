@@ -2592,16 +2592,13 @@ def git_info_py(
          git_diff_n = 0
          git_sha = 'aa00d79773e1e3c4176b59ac76bfef89830bd289'
     '''
-    try:
-        sha, comment, diff, branch = git_info(path)
-    except Exception:
-        if check:
-            raise
-        else:
-            sha, comment, diff, branch = None
-            diff_len = None
-    else:
+    sha, comment, diff, branch = git_info(path)
+    if None in (sha, comment, diff, branch) and check:
+        raise Exception(f'Unable to get git info for: {path}')
+    if isinstance(diff, int):
         diff_len = len(diff)
+    else:
+        diff_len = None
     ret = ''
     if name_branch:
         ret += f'{prefix}{name_branch} = {branch!r}\n'
