@@ -196,6 +196,11 @@ Other
 Changelog
 ---------
 
+
+* In Package class, make metadata version explicit.
+* Use license classifier to clarify that pipcl is GNU Affero v3 only.
+
+
 **Version 10** (2026-06-26)
 
 * Fixed pipcl.git_info_py() in a non-git-checkout.
