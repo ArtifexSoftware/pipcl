@@ -286,6 +286,8 @@ class WindowsCpu:
     Members:
         .bits
             32 or 64.
+        .name
+            One of: arm32 arm64 x32 x64.
         .windows_subdir
             Empty string, `x64/`, `arm64` etc.
         .windows_name
