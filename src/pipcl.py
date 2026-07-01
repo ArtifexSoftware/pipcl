@@ -357,6 +357,9 @@ class Package:
             We generate sdist's according to:
             https://packaging.python.org/specifications/source-distribution-format/
     '''
+    
+    _metadata_version = '2.1'
+    
     def __init__(self,
             name,
             version,
@@ -1616,7 +1619,7 @@ class Package:
                 assert value.count(',') == 1, f'For {key=}, should have one comma in {value!r}.'
             ret[0] += f'{key}: {value}\n'
         #add('Description', self.description)
-        add('Metadata-Version', '2.1')
+        add('Metadata-Version', self._metadata_version)
 
         # These names are from:
         # https://packaging.python.org/specifications/core-metadata/
