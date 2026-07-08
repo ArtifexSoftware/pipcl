@@ -771,6 +771,8 @@ class Package:
             else:
                 requires_dist2 = list(requires_dist2)
             for i, prereq in enumerate(requires_dist2):
+                if prereq is None:
+                    continue
                 requirement = packaging.requirements.Requirement(prereq)
                 version2 = version_override(requirement.name)
                 if version2:
