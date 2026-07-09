@@ -202,7 +202,8 @@ Other
 Changelog
 ---------
 
-**Version 12**
+**Version 12** (2026-07-09)
+
 
 * Fixed handling of ``None`` in ``Package.__init__()``'s ``<requires_dist>`` arg.
 * On Windows, improved searching for Visual Studio.
