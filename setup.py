@@ -22,7 +22,7 @@ def sdist():
 
 p = pipcl.Package(
         'pipcl',
-        version = '11',
+        version = '12',
         pure = True,
         requires_dist='packaging',
         description='README.rst',
