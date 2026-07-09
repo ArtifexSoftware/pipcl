@@ -82,7 +82,17 @@ class WindowsVS:
 
             # Find vcvars.bat.
             #
-            vcvars = f'{directory}\\VC\\Auxiliary\\Build\\vcvars{cpu.bits}.bat'
+            if cpu.name == 'x32':
+                leaf = 'vcvars32.bat'
+            elif cpu.name == 'x64':
+                leaf = 'vcvars64.bat'
+            elif cpu.name == 'arm32':
+                leaf = 'vcvarsarm.bat'
+            elif cpu.name == 'arm64':
+                leaf = 'vcvarsarm64.bat'
+            else:
+                assert 0, f'Cannot specify vcvars*.bat because unrecognised {cpu.name=}.'
+            vcvars = f'{directory}\\VC\\Auxiliary\\Build\\{leaf}'
             assert os.path.isfile( vcvars), f'No match for: {vcvars}'
 
             if 0:
