@@ -25,6 +25,12 @@ to do everything that is specific to the package, without having to worry about
 generic Python packaging issues such wheel formats etc (see https://packaging.python.org/en/latest/specifications/).
 
 
+Locations
+---------
+* https://pypi.org/project/pipcl
+* https://github.com/ArtifexSoftware/pipcl
+
+
 Basic usage
 -----------
 
@@ -74,7 +80,7 @@ can be modified to use ``pipcl.build_extension()``::
                 )
         # <so_leaf> will be '_mymodule.so' or similar.
         return [
-                ('build/foo.py', 'mymodule/__init__.py'),
+                ('build/mymodule.py', 'mymodule/__init__.py'),
                 (f'build/{so_leaf}', 'mymodule/'),
                 ]        
     def sdist():
@@ -196,20 +202,39 @@ Other
 Changelog
 ---------
 
+**Version 12**
 
-* In Package class, make metadata version explicit.
+* Fixed handling of ``None`` in ``Package.__init__()``'s ``<requires_dist>`` arg.
+* On Windows, improved searching for Visual Studio.
+
+  * We now find Visual Studio 2026 correctly.
+  
+  * We now use Microsoft's ``vswhere.exe`` executable to find installations of
+    Visual Studio.
+
+  * Instances of class ``pipcl.wdev.WindowsVS`` are now primarily
+    obtained using new functions ``pipcl.wdev.windows_vs()`` and
+    ``pipcl.wdev.windows_vs_multiple()`` instead of direct construction.
+
+* Fixed bug in ``pipcl.build_extension()`` example.
+* Fixed compile/link commands on windows-arm - use ``vcvarsarm.bat`` or ``vcvarsarm64.bat``.
+
+
+**Version 11** (2026-07-01)
+
+* In ``Package`` class, make metadata version explicit.
 * Use license classifier to clarify that pipcl is GNU Affero v3 only.
 
 
 **Version 10** (2026-06-26)
 
-* Fixed pipcl.git_info_py() in a non-git-checkout.
+* Fixed ``pipcl.git_info_py()`` in a non-git-checkout.
 
 
 **Version 9** (2026-06-18)
 
-* Added added git_info_py().
-* Added version_to_tuple().
+* Added added ``git_info_py()``.
+* Added ``version_to_tuple()``.
 
 
 **Version 8** (2026-06-17)
@@ -227,12 +252,12 @@ Changelog
 
 **Version 6** (2026-05-21)
 
-* In build_extension(), added new arg ``compiler_extra_cpp``.
+* In ``build_extension()``, added new arg ``compiler_extra_cpp``.
 
 
 **Version 5** (2026-05-18)
 
-* Automatically compile extension source with cc or c++ depending on suffix.
+* Automatically compile extension source with ``cc`` or ``c++`` depending on suffix.
 
 
 **Version 4** (2026-05-08)
