@@ -1898,6 +1898,8 @@ def build_extension(
 
     Returns the leafname of the generated library file within `outdir`, e.g.
     `_{name}.so` on Unix or `_{name}.cp311-win_amd64.pyd` on Windows.
+    
+    Also creates `<outdir>/<name>.py`.
     '''
     
     if builddir is None:
