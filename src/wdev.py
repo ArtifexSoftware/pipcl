@@ -45,9 +45,11 @@ class WindowsVS:
         '''
         Internal use only. Use windows_vs() or windows_vs_multiple() to create instance(s).
         '''
-        if kwargs:
+        if args:
+            assert len(args) == 2 and not kwargs, f'{args=} {kwargs=}'
+            vswhere, cpu = args
+        else:
             # Backwards compatibility only - callers should use windows_vs().
-            assert not args
             year = kwargs.pop('year', None)
             grade = kwargs.pop('grade', None)
             version = kwargs.pop('version', None)
@@ -55,13 +57,10 @@ class WindowsVS:
             directory = kwargs.pop('directory', None)
             assert not kwargs, f'Unrecognised args: {kwargs=}'
             
-            vs = windows_vs(year=year, grade=grade, version=version, directory=directory)
+            vs = windows_vs(year=year, grade=grade, version=version, directory=directory, cpu=cpu)
             # Want to set self = vs, but that's not going to work, so instead
-            # we just construct from vs.vswhere, cpu and version.
+            # we just construct from vs.vswhere and cpu.
             vswhere = vs.vswhere
-        else:
-            assert len(args) == 2 and not kwargs, f'{args=} {kwargs=}'
-            vswhere, cpu = args
         
         if not cpu:
             cpu = WindowsCpu()
@@ -291,10 +290,13 @@ def windows_vs_multiple(*, year=None, vsversion=None, grade=None, version=None, 
 
             If None we use environment variable WDEV_VS_GRADE if set.
         version:
-            None or, for example: `14.28.29910`. If None we use environment
-            variable WDEV_VS_VERSION if set. This is not matched against output
-            from vswhere.exe, instead identifies subdirectory in the cl.exe and
-            link.exe paths.
+            None or, for example, `14.28.29910`. If None we use environment
+            variable WDEV_VS_VERSION if set.
+
+            This is not matched against output from vswhere.exe, instead
+            identifies subdirectory in the cl.exe and link.exe paths.
+
+            If None, we use the highest available version.
         directory:
             None or the installation directory.
         cpu:
@@ -394,14 +396,14 @@ def windows_vs_multiple(*, year=None, vsversion=None, grade=None, version=None, 
     return ret
 
 
-def windows_vs(*, year=None, grade=None, version=None, directory=None, verbose=0, check=1):
+def windows_vs(*, year=None, grade=None, version=None, directory=None, cpu=None, verbose=0, check=1):
     '''
     Returns best matching WindowsVS.
     Args are same as windows_vs_multiple().
     check:
         If true (the default) we raise exception if not found, otherwise we return None.
     '''
-    wvss = windows_vs_multiple(year=year, grade=grade, version=version, directory=directory, verbose=verbose)
+    wvss = windows_vs_multiple(year=year, grade=grade, version=version, directory=directory, cpu=cpu, verbose=verbose)
     if not wvss:
         if check:
             wvss = windows_vs_multiple()
