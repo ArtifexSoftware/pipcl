@@ -189,10 +189,31 @@ Other functions and classes
 
 Environment variables
 .....................
-* Environmental variable ``PIPCL_CHANGE_VERSIONS`` can be used to modify package versions.
+* ``PIPCL_CHANGE_VERSIONS``
+
+  This can be used to override package versions specified in various places:
+  
+  * The package version specified when creating a ``pipcl.Package()``.
+  * Packages specified in the ``requires_dist`` specified when creating a ``pipcl.Package``.
+  * Packages returned by setup.py's ``get_requires_for_build_wheel()``.
+    
+    * Note that this only works if ``get_requires_for_build_wheel()`` is defined in setup.py
+      *before* it calls ``pipcl.Package()``.
   
   For more information see file:src/pipcl.py, class ``Package``,
   method ``__init__()``, args ``version`` and ``requires_dist``.
+
+* ``PIPCL_PREBUILT_WHEEL_<packagae-name>``
+
+  Specifies a location of wheel to be used instead of building a wheel for
+  ``<package-name>``.
+
+  This can be used to get a wheel from an external location instead of building
+  it. The value should be something that can be passed to an internal call to
+  ``pip wheel``, for example a local path or a URL.
+
+  ``<package-name>`` will be as used in wheel filenames - all lower-case with
+  special characters replaced by underscores.
 
 Other
 .....
@@ -202,8 +223,19 @@ Other
 Changelog
 ---------
 
-**Version 12** (2026-07-09)
+**Version 13**
 
+* Added missing ``<cpu>`` arg to ``pipcl.wdev.windows_vs()``.
+* ``pipcl.version_to_tuple()`` now also accepts a sequence as well as a string.
+* ``build_extension()``: optionally return ``(py, lib)`` instead of library leafname.
+* Minor improvements to indentation of compiler/linker commands.
+* Extend ``PIPCL_CHANGE_VERSIONS`` to also modify return from ``get_requires_for_build_wheel()``.
+* ``git_items()``: avoid occasional problem with windows ``/`` vs ``\``.
+* ``pipcl.run()``: added ``<cwd>`` arg.
+* Add support for getting wheel from external location - see `Environment variables`_
+  ``PIPCL_PREBUILT_WHEEL_<packagae-name>``.
+
+**Version 12** (2026-07-09)
 
 * Fixed handling of ``None`` in ``Package.__init__()``'s ``<requires_dist>`` arg.
 * On Windows, improved searching for Visual Studio.
