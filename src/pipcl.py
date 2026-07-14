@@ -4798,13 +4798,7 @@ def python_version_tuple():
     Like platform.python_version_tuple() except converts items to integers if
     possible.
     '''
-    ret = list(platform.python_version_tuple())
-    for i, value in enumerate(ret):
-        try:
-            ret[i] = int(value)
-        except Exception:
-            pass
-    return tuple(ret)
+    return version_to_tuple(platform.python_version_tuple())
 
 
 def str_to_int(s, replace=str):
@@ -4844,7 +4838,8 @@ def version_to_tuple(version, replace=str):
     If an item does not convert to an int, behaviour depends on <replace>.
     Args:
         version
-            A string containing items separated by '.'
+            A string containing items separated by '.', or a sequence of
+            strings.
         replace
             Governs what we do if conversion of item to int fails:
                 None:
@@ -4864,8 +4859,9 @@ def version_to_tuple(version, replace=str):
     >>> version_to_tuple('1.2.3.alpha', replace=0)
     (1, 2, 3, 0)
     '''
-    version2 = version.split('.')
-    return tuple(str_to_int(i, replace) for i in version2)
+    if isinstance(version, str):
+        version = version.split('.')
+    return tuple(str_to_int(i, replace) for i in version)
 
 
 def venv_enter_cmd(venv_name):
