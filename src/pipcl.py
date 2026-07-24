@@ -1799,6 +1799,7 @@ def build_extension(
         infer_swig_includes=True,
         py_limited_api=False,
         nogil=False,
+        return_paths=False,
         ):
     '''
     Builds a Python extension module using SWIG. Works on Windows, Linux, MacOS
@@ -1895,9 +1896,40 @@ def build_extension(
         nogil:
             If true we use swig's `-nogil` flag which marks the extension as
             being thread safe.
+        return_paths:
+            If true we return `(py, lib)` where `py` is path of generated .py
+            file and `lib` is path of generated shared library file.
+            
+            def build():
+                py, lib = pipcl.build_extension(...)
+                return [
+                        (py, 'mymodule/__init__.py'),
+                        (lib, 'mymodule/'),
+                        ]
 
-    Returns the leafname of the generated library file within `outdir`, e.g.
-    `_{name}.so` on Unix or `_{name}.cp311-win_amd64.pyd` on Windows.
+    If `return_paths` is true:
+        Returns `(py, lib)` where `py` is path of generated .py file and `lib`
+        is path of generated shared library file; both of these will be in
+        <builddir>. This allows simpler usage like:
+        
+            def build():
+                py, lib = pipcl.build_extension(name='mymodule', ...)
+                return [
+                        (py, 'mymodule/__init__.py'),
+                        (lib, 'mymodule/'),
+                        ]
+    
+    Otherwise (the default):
+        Returns the leafname of the generated library file within `outdir`,
+        e.g. `_{name}.so` on Unix or `_{name}.cp311-win_amd64.pyd` on Windows.
+        Usage is:
+        
+            def build():
+                so_leaf = pipcl.build_extension(name='mymodule', ...)
+                return [
+                        ('build/mymodule.py', 'mymodule/__init__.py'),
+                        (f'build/{so_leaf}', 'mymodule/'),
+                        ]
     
     Also creates `<outdir>/<name>.py`.
     '''
@@ -2044,8 +2076,11 @@ def build_extension(
         macos_patch2(path_so, libpaths, libs)
 
     _extensions_to_py_limited_api[os.path.abspath(path_so)] = py_limited_api
-
-    return path_so_leaf
+    
+    if return_paths:
+        return f'{builddir}/{name}.py', path_so
+    else:
+        return path_so_leaf
 
 
 # Functions that might be useful.
