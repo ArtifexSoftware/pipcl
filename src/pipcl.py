@@ -2746,6 +2746,47 @@ def fs_write_key(path, data):
             os.close(fd)
 
 
+def git_get_parse_text(
+        text,
+        *,
+        branch = None,
+        depth = None,
+        remote = None,
+        sha = None,
+        tag = None,
+        ):
+    '''
+    Parses text following 'git:' for git_get().
+    '''
+    assert text.startswith('git:')
+    args = iter(shlex.split(text[len('git:'):]))
+    while 1:
+        try:
+            arg = next(args)
+        except StopIteration:
+            break
+        if arg in ('-b', '--branch'):
+            branch = next(args)
+            tag = None
+            sha = None
+        elif arg in ('-t', '--tag'):
+            tag = next(args)
+            branch = None
+            sha = None
+        elif arg in ('-s', '--sha'):
+            sha = next(args)
+            branch = None
+            tag = None
+        elif arg == '--depth':
+            depth = int(next(args))
+        elif arg.startswith('-'):
+            assert 0, f'Unrecognised {arg=} in {text=}.'
+        else:
+            remote = arg
+            
+    return branch, depth, remote, sha, tag
+
+
 def git_get(
         local,
         *,
@@ -2844,30 +2885,14 @@ def git_get(
     
     if text:
         if text.startswith('git:'):
-            args = iter(shlex.split(text[len('git:'):]))
-            while 1:
-                try:
-                    arg = next(args)
-                except StopIteration:
-                    break
-                if arg in ('-b', '--branch'):
-                    branch = next(args)
-                    tag = None
-                    sha = None
-                elif arg in ('-t', '--tag'):
-                    tag = next(args)
-                    branch = None
-                    sha = None
-                elif arg in ('-s', '--sha'):
-                    sha = next(args)
-                    branch = None
-                    tag = None
-                elif arg == '--depth':
-                    depth = int(next(args))
-                elif arg.startswith('-'):
-                    assert 0, f'Unrecognised {arg=} in {text=}.'
-                else:
-                    remote = arg
+            branch, depth, remote, sha, tag = git_get_parse_text(
+                    text,
+                    branch=branch,
+                    depth=depth,
+                    remote=remote,
+                    sha=sha,
+                    tag=tag,
+                    )
             assert remote, f'<remote> unset and no remote specified in {text=}.'
             assert branch or tag or sha, f'<branch> and <tag> unset and no branch/tag specified in {text=}.'
         else:
