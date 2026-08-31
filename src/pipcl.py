@@ -42,6 +42,7 @@ import hashlib
 import inspect
 import io
 import os
+import packaging.requirements
 import pickle
 import platform
 import re
@@ -425,6 +426,10 @@ class Package:
                         <package-name-regex> <new-version>
                     If any line's <package-name-regex> matches <name>, then
                     <version> is changed to the line's <new-version>.
+                    
+                    Unlike with `requires_dist` it does not make sense to have
+                    non-exact version number here, so <new-version> must start
+                    with '=='.
 
                     For example if foo/ contains a package called foo that uses
                     pipcl, then this:
@@ -522,9 +527,7 @@ class Package:
                 
                 If environment variable PIPCL_CHANGE_VERSIONS is set, version
                 numbers for matching items in <requires_dist> will be
-                overridden - see description of <version> for details. (This
-                will overwrite matching requirements to be in the simple form
-                `<name>==<version>`; any other elements will be lost.)
+                overridden - see description of <version> for details.
             
             requires_external:
                 Used for metadata `Requires-External`.
@@ -756,32 +759,56 @@ class Package:
         self.graal_legacy_python_config = True
         
         # Override version numbers if PIPCL_CHANGE_VERSIONS is set.
-        #
-        version2 = version_override(self.name)
-        if version2:
-            log(f'Changing {self.version=} to {version2=}.')
-            self.version = version2
+        PIPCL_CHANGE_VERSIONS = os.environ.get('PIPCL_CHANGE_VERSIONS')
+        log(f'{PIPCL_CHANGE_VERSIONS=}')
+        if PIPCL_CHANGE_VERSIONS:
+            # Override package version.
+            name2, version2 = version_override(self.name, PIPCL_CHANGE_VERSIONS)
+            if name2:
+                assert name2 == self.name
+                assert version2.startswith('==')
+                version3 = version2[2:]
+                log(f'Changing {self.version=} to {version3=}.')
+                self.version = version3
             _assert_version_pep_440(self.version)
 
-        if self.requires_dist:
-            import packaging.requirements
-            requires_dist2 = self.requires_dist
-            if isinstance(requires_dist2, str):
-                requires_dist2 = [requires_dist2]
+            # Override requires_dist versions.
+            #
+            if self.requires_dist:
+                requires_dist2 = self.requires_dist
+                if isinstance(requires_dist2, str):
+                    requires_dist2 = [requires_dist2]
+                else:
+                    requires_dist2 = list(requires_dist2)
+                requires_dist3 = version_override_multiple(requires_dist2, PIPCL_CHANGE_VERSIONS)
+                self.requires_dist = requires_dist3
+        
+            # Override our caller's get_requires_for_build_wheel().
+            #
+            frame = inspect.stack(context=0)[1]
+            assert os.path.basename(frame.filename) == 'setup.py', f'{frame.filename=}'
+            grfbw = frame.frame.f_globals.get('get_requires_for_build_wheel')
+            if grfbw:
+                def grfbw_wrap(config_settings=None):
+                    log(f'Wrapping get_requires_for_build_wheel().')
+                    ret1 = grfbw(config_settings=config_settings)
+                    ret2 = version_override_multiple(ret1, PIPCL_CHANGE_VERSIONS)
+                    log(f'{ret1=}.')
+                    log(f'{ret2=}.')
+                    if ret2 != ret1:
+                        log(f'Overriding return from get_requires_for_build_wheel():')
+                        for r1, r2 in zip(ret1, ret2, strict=1):
+                            if r1 != r2:
+                                log(f'Changing {r1!r} to {r2!r}')
+                    return ret2
+                frame.frame.f_globals['get_requires_for_build_wheel'] = grfbw_wrap
             else:
-                requires_dist2 = list(requires_dist2)
-            for i, prereq in enumerate(requires_dist2):
-                if prereq is None:
-                    continue
-                requirement = packaging.requirements.Requirement(prereq)
-                version2 = version_override(requirement.name)
-                if version2:
-                    # This loses information if the requirement contains
-                    # 'extra' names or environment markers.
-                    requires_dist2[i] = f'{requirement.name}=={version2}'
-            log(f'Changing {self.requires_dist=} to {requires_dist2}.')
-            self.requires_dist = requires_dist2
-                
+                log(f'Warning: PIPCL_CHANGE_VERSIONS is set, but unable to find get_requires_for_build_wheel().')
+                if 0:
+                    self._caller_globals = frame.frame.f_globals
+                    for n, v in frame.frame.f_globals.items():
+                        log(f'    {n=} {v=}')
+            
     def build_wheel(self,
             wheel_directory,
             config_settings=None,
@@ -1748,31 +1775,63 @@ class Package:
 _extensions_to_py_limited_api = dict()
 
 
-def version_override(name):
+def make_overrides(overrides):
     '''
-    If PIPCL_CHANGE_VERSIONS is set and contains a match for <name>, we return
-    the override version.
-
-    Otherwise we return None.
-    
-    This should be called by a setup.py's get_requires_for_build_wheel() for
-    each item it returns.
+    Returns <overrides> if already a list, or a list of (regex, suffix) pairs
+    obtained by splitting overrides into lines of '<regex> <suffix>' pairs.
     '''
-    PIPCL_CHANGE_VERSIONS = os.environ.get('PIPCL_CHANGE_VERSIONS')
-    if PIPCL_CHANGE_VERSIONS:
-        log(f'{PIPCL_CHANGE_VERSIONS=}.')
-        log(f'Looking at changing version of {name=}.')
-        for line in PIPCL_CHANGE_VERSIONS.split('\n'):
+    if isinstance(overrides, list):
+        return overrides
+    else:
+        assert isinstance(overrides, str)
+        ret = list()
+        if not overrides:
+            return ret
+        for line in overrides.split('\n'):
             if not line:
                 continue
             nv = line.split(' ')
-            assert len(nv) == 2, f'Incorrect line in PIPCL_CHANGE_VERSIONS, should be `<regex> <version>`: {line!r}'
-            regex_name, replace_version = nv
-            m = re.match(regex_name, name.lower())
-            if m:
-                log(f'From {PIPCL_CHANGE_VERSIONS=}, changing version to {replace_version!r}')
-                return replace_version
-        log(f'No match.')
+            assert len(nv) == 2, f'Incorrect line in {overrides=}, should be `<regex> <version>`: {line!r}'
+            regex, suffix = nv
+            ret.append((regex, suffix))
+        return ret
+
+
+def version_override(name, overrides):
+    '''
+    If <overrides> has a match for <name>, we return (name, suffix), e.g.
+    ('foo', '==1.2.3'). Otherwise return (None, None).
+    
+    name:
+        Package name, may contain suffix such as `==1.2.3`, which is ignored.
+    overrides:
+        Something that can be passed to make_overrides().
+    '''
+    overrides2 = make_overrides(overrides)
+    name_requirement = packaging.requirements.Requirement(name)
+    for regex, suffix in overrides2:
+        m = re.match(regex, name_requirement.name)
+        if m:
+            return (name_requirement.name, suffix)
+    return None, None
+    
+
+def version_override_multiple(names, overrides):
+    '''
+    Returns copy of list of names, overriding version numbers according to
+    <overrides>.
+    '''
+    overrides2 = make_overrides(overrides)
+    names2 = list()
+    for name in names:
+        name2, suffix = version_override(name, overrides2)
+        if name2:
+            names2.append(f'{name2}{suffix}')
+        else:
+            names2.append(name)
+    if names2 != names:
+        log(f'Changing {names=} to {names2=}.')
+    return names2
 
 
 def build_extension(
@@ -4122,7 +4181,7 @@ def _normalise(name):
 
 def _normalise2(name):
     '''
-    shttps://packaging.python.org/en/latest/specifications/binary-distribution-format/
+    https://packaging.python.org/en/latest/specifications/binary-distribution-format/
     '''
     return _normalise(name).replace('-', '_')
 
