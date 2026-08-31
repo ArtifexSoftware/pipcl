@@ -56,7 +56,7 @@ def test_project():
 
                 def sdist():
                     ret = list()
-                    for p in git_items('.'):
+                    for p in pipcl.git_items('.'):
                         ret.append(p)
                     return ret
 
