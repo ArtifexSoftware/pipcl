@@ -3113,6 +3113,7 @@ def run(
         *,
         capture=False,
         check=1,
+        cwd=None,
         verbose=1,
         env=None,
         env_extra=None,
@@ -3146,6 +3147,8 @@ def run(
         check:
             If true we raise an exception on error; otherwise we include the
             command's returncode in our return value.
+        cwd:
+            If not None, the directory in which to run the command.
         verbose:
             If true we show the command.
         env:
@@ -3204,11 +3207,13 @@ def run(
     if verbose:
         text = f'Running:'
         nl = '\n    '
-        text += f' {nl.join(lines)}'
+        text += f' {nl.join(lines)}\n'
         if env_extra:
-            text += f'\nwith:\n'
+            text += f'with:\n'
             for k in sorted(env_extra.keys()):
                 text += f'    {k}={shlex.quote(env_extra[k])}\n'
+        if cwd:
+            text += f'with: {cwd=}\n'
         log1(text, caller=caller+1)
     if isinstance(command, str):
         sep = ' ' if windows() else ' \\\n'
@@ -3273,6 +3278,7 @@ def run(
             
             child = subprocess.Popen(   # pylint: disable=consider-using-with
                     command2,
+                    cwd=cwd,
                     shell=isinstance(command2, str),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -3342,6 +3348,7 @@ def run(
             # Simple case - we can simply call subprocess.run().
             cp = subprocess.run(
                     command2,
+                    cwd=cwd,
                     shell=True,
                     stdout=subprocess.PIPE if capture else None,
                     stderr=subprocess.STDOUT if capture else None,
