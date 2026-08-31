@@ -2270,7 +2270,7 @@ def compiler_command(
         debug2 = '/Zi' if debug else ''
         py_limited_api3 = f'/DPy_LIMITED_API={py_limited_api2}' if py_limited_api2 else ''
         
-        compiler_command = f'''
+        compiler_command = textwrap.dedent(f'''
                 {compiler_command}
                     # General:
                     /c                          # Compiles without linking.
@@ -2301,7 +2301,7 @@ def compiler_command(
                     {compiler_extra_cpp}
 
                     {py_limited_api3}
-                '''
+                ''')
         for source_path in source_paths:
             compiler_command += f'    {T}{source_path}\n'
     
@@ -2312,7 +2312,7 @@ def compiler_command(
             general_flags += ' -O2 -DNDEBUG'
         py_limited_api3 = f'-DPy_LIMITED_API={py_limited_api2}' if py_limited_api2 else ''
         
-        compiler_command = f'''
+        compiler_command = textwrap.dedent(f'''
                 {compiler_command}
                     {general_flags.strip()}
                     {pythonflags.includes if python else ''}
@@ -2324,7 +2324,7 @@ def compiler_command(
                     {py_limited_api3}
                     -c
                     -o {path_o}
-                '''
+                ''')
         for source_path in source_paths:
             compiler_command += f'    {source_path}\n'
     
@@ -2433,7 +2433,7 @@ def linker_command(
         # Fun fact - on Linux, if the -L and -l options are before '{path_cpp}'
         # they seem to be ignored...
         #
-
+        linker_command += f'\n'
         for path_o in path_os:
             linker_command += f'    {path_o}\n'
         if path_out:
