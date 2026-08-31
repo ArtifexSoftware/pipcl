@@ -2758,13 +2758,14 @@ def git_items( directory, submodules=False):
 
     This function can be useful for the `fn_sdist()` callback.
     '''
-    command = 'cd ' + directory + ' && git ls-files'
+    command = 'git ls-files'
+    cwd = directory.replace('/', os.sep)
     if submodules:
         command += ' --recurse-submodules'
-    log1(f'Running {command=}')
-    text = subprocess.check_output( command, shell=True)
+    log1(f'Running with {cwd=}: {command=}.')
+    text = subprocess.check_output(command, shell=True, cwd=cwd)
     ret = []
-    for path in text.decode('utf8').strip().split( '\n'):
+    for path in text.decode('utf8').strip().split('\n'):
         path2 = os.path.join(directory, path)
         # Sometimes git ls-files seems to list empty/non-existent directories
         # within submodules.
