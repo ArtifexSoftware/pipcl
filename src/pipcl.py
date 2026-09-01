@@ -3177,6 +3177,7 @@ def run(
             Where to write output. Single item or list/tuple of items. Each item
             can be a callable or an object with .write() and .flush() members.
             Special value 'log' writes to `pipcl.log()`.
+            Default is 'log', or None if <capture> is true.
         tee:
             Name of file to also write to. We refuse to overwrite existing file.
         log:
@@ -3789,7 +3790,7 @@ def _command_lines( command):
             if line.strip():
                 lines.append(line.rstrip())
     else:
-        return command
+        return ['['] + command + [']']
     return lines
 
 
