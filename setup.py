@@ -24,7 +24,7 @@ p = pipcl.Package(
         'pipcl',
         version = '13',
         pure = True,
-        requires_dist='packaging',
+        requires_dist=['pip', 'packaging'],
         description='README.rst',
         summary='Python packaging operations, including PEP-517 support, for use by a setup.py script.',
         author='Artifex',

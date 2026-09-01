@@ -53,6 +53,7 @@ import subprocess
 import sys
 import sysconfig
 import tarfile
+import tempfile
 import textwrap
 import time
 import zipfile
@@ -827,6 +828,21 @@ class Package:
                 f' metadata_directory={metadata_directory!r}'
                 )
 
+        prebuilt = f'PIPCL_PREBUILT_WHEEL_{_normalise2(self.name)}'
+        prebuilt_location = os.environ.get(prebuilt)
+        log(f'{prebuilt}={prebuilt_location!r}')
+        if prebuilt_location:
+            log(f'Getting pre-built wheel using pip, from {prebuilt_location!r}.')
+            with tempfile.TemporaryDirectory(prefix='pipcl-') as dir_path:
+                run(['pip', 'wheel', '--no-deps', '-w', dir_path, prebuilt_location])
+                wheel_path = glob.glob(f'{dir_path}/*.whl')
+                assert len(wheel_path) == 1, f'{wheel_path=}'
+                wheel_path = wheel_path[0]
+                shutil.move(wheel_path, wheel_directory)
+            wheel_leaf = os.path.basename(wheel_path)
+            log(f'Returning prebuilt {wheel_leaf=}')
+            return wheel_leaf
+                
         if os.environ.get('CIBUILDWHEEL') == '1':
             # Don't special-case graal builds when running under cibuildwheel.
             pass

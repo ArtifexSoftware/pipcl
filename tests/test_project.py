@@ -1,3 +1,4 @@
+import glob
 import os
 import sys
 import textwrap
@@ -159,3 +160,23 @@ def test_project():
     pipcl.log('## Check we can import pipcl_test_module.')
     pipcl.log(f'{sys.path=}')
     import pipcl_test_module
+    
+    # Test PIPCL_PREBUILT_WHEEL_*.
+    env_name = f'PIPCL_PREBUILT_WHEEL_foo'
+    env_value = path_foo_wheel
+    wheelhouse_prebuilt = f'{path_test}/wheelhouse-prebuilt'
+    out = pipcl.run(f'''pip wheel
+            -v
+            -w {wheelhouse_prebuilt}
+            --extra-index-url {pip_index_url}
+            {path_test}/project
+            ''',
+            env_extra={env_name: env_value},
+            capture=1,
+            out='log',
+            prefix=f'build with PIPCL_PREBUILT_WHEEL*: ',
+            )
+    assert 'Returning prebuilt wheel_leaf=' in out
+    wheel_path = glob.glob(f'{wheelhouse_prebuilt}/*')
+    assert len(wheel_path) == 1
+    wheel_path = wheel_path[0]
